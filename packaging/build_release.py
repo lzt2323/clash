@@ -164,6 +164,15 @@ def build(arch, version, cache, output):
                   if p.is_file() and p.suffix in ('.py', '.sh')]
         files += [str(p.relative_to(ROOT)) for p in sorted((ROOT / 'checksums').glob('*.sha256'))]
         files += ['temp/mihomo_config.template.yaml', 'temp/templete_config.yaml']
+        notices = 'packaging/third-party/mihomo-%s-NOTICES.txt' % core_version
+        notice_index = 'packaging/third-party/mihomo-%s-index.json' % core_version
+        index = json.loads((ROOT / notice_index).read_text())
+        if index['version'] != core_version or index['notice_sha256'] != digest(ROOT / notices):
+            raise RuntimeError('Mihomo notice index does not match its version or text')
+        if not any(binary['name'] == core_name and binary['sha256'] == hashes[core_name]
+                   for binary in index.get('binaries', [])):
+            raise RuntimeError('Mihomo notice index does not cover this pinned core asset')
+        files += [notices, notice_index]
         for name in files:
             dest = stage / name
             dest.parent.mkdir(parents=True, exist_ok=True)
@@ -188,6 +197,9 @@ def build(arch, version, cache, output):
             'Mihomo license: licenses/mihomo/LICENSE.txt (GNU GPL version 3).\n' %
             (core_version, core_version, core_version, lock['python']['version'],
              lock['python']['release'], lock['python']['release'], licenses['url']))
+        with (stage / 'THIRD-PARTY-NOTICES.txt').open('a') as notice:
+            notice.write('Mihomo dependency and copied-code original notices: %s\n'
+                         'Versioned modules, hashes and source index: %s\n' % (notices, notice_index))
         members = sorted(p for p in stage.rglob('*') if p.is_file())
         for path in members:
             path.resolve().relative_to(stage.resolve())

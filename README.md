@@ -23,6 +23,8 @@ source ~/.local/share/clash-linux/env.sh
 
 可用 `--prefix /absolute/path` 指定目录、`--shell zsh` 接入 Zsh、`--no-shell` 跳过 shell 配置。安装器拒绝覆盖无标记目录或其他 Clash 的命令入口。重复安装同版本只重新接入 shell；MVP 暂不支持跨版本升级。
 
+已经下载源码的用户，直接在源码目录运行 `bash install.sh`，安装器仍会安装完整发行包；日常使用不需要维护源码环境。
+
 首次安装不需要连接 GitHub，只要能访问主下载服务器即可。国内网络能否连接服务器和订阅提供方取决于实际线路；域名配置本身不保证可达。也可提前下载对应架构的完整包与校验值，在离线机器执行：
 
 ```bash
@@ -143,3 +145,19 @@ MIHOMO_BINARY=/absolute/path/to/mihomo python3 -B tests/terminal_mvp_integration
 本轮实测修复了控制接口早于节点加载就绪的问题，并补充启动执行窗口、超时/中断清理和控制密码不出现在 curl 参数中的检查。离线 CLI 测试使用独立目录，不继承已有订阅状态。macOS 上的真实内核测试使用专用生命周期适配；Linux 实测使用生产脚本。
 
 项目的目标运行环境为 Linux。macOS 系统 Bash 版本与 GNU 命令差异可能使旧 Linux 脚本无法直接在 macOS 上运行。
+
+## 构建与发布
+
+在 Linux 的大小写敏感文件系统上构建完整包（构建机需要 Python 3，目标用户不需要）：
+
+```bash
+python3 packaging/build_release.py --arch amd64 --version v0.1.0
+python3 packaging/build_release.py --arch arm64 --version v0.1.0
+python3 tests/full_bundle_test.py --archive runtime/releases/v0.1.0/clash-linux-amd64.tar.gz
+```
+
+运行时版本与 SHA256 固定在 `packaging/runtime-lock.json`、`checksums/`。私有 Python 从官方 python-build-standalone 获取，核心从官方 Mihomo Release 获取；最终用户从主下载源或 GitHub 获取完整包，无需再次访问上游。
+
+推送 `v*` 标签会构建两个架构，amd64 安装与卸载验收通过后发布 GitHub Release。发行新版本时同步更新 `install.sh` 的 `VERSION`、`packaging/get.sh` 的 `version` 和文档中的默认版本。ARM64 包经过构建及清单校验，运行验收需在 ARM64 Linux 上完成。
+
+主下载服务器使用独立静态目录 `/srv/clash-downloads`：将同一 Release 的安装包、SHA256SUMS、install.sh、get.sh 和源码包复制到 `releases/版本号/`，验证后再替换站点根目录的安装入口。只公开发行文件，不将项目工作目录或订阅目录作为网站根目录。下载域名与现有支付服务分别匹配，由 Caddy 管理 HTTPS。

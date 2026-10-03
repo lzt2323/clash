@@ -86,6 +86,13 @@ class PackageTests(unittest.TestCase):
         self.root.joinpath('checksums/mihomo-v1.19.29.sha256').write_text('\n'.join(
             builder.digest(self.core) + '  mihomo-linux-' + arch + '-v1.19.29.gz'
             for arch in ('amd64', 'arm64')))
+        notices = self.root / 'packaging/third-party'
+        notices.mkdir()
+        notices.joinpath('mihomo-v1.19.29-NOTICES.txt').write_text('ORIGINAL_MODULE_COPYRIGHT')
+        notices.joinpath('mihomo-v1.19.29-index.json').write_text(json.dumps({
+            'version': 'v1.19.29', 'notice_sha256': builder.digest(notices / 'mihomo-v1.19.29-NOTICES.txt'),
+            'binaries': [{'name': 'mihomo-linux-' + arch + '-v1.19.29.gz', 'sha256': builder.digest(self.core)}
+                         for arch in ('amd64', 'arm64')]}))
 
     def fake_download(self, url, expected, destination):
         path = self.licenses if 'licenses' in url else self.core if 'mihomo' in url else self.py
@@ -128,6 +135,8 @@ class PackageTests(unittest.TestCase):
                              b'PIP_LICENSE')
             self.assertIn('clash-linux/licenses/mihomo/LICENSE.txt', names)
             self.assertIn('clash-linux/python/licenses/LICENSE.ncurses.txt', names)
+            self.assertEqual(tf.extractfile('clash-linux/packaging/third-party/mihomo-v1.19.29-NOTICES.txt').read(),
+                             b'ORIGINAL_MODULE_COPYRIGHT')
 
     def test_two_architectures_have_stable_checksums_and_complete_manifest(self):
         amd64 = self.build()
