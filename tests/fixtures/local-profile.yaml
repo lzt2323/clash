@@ -1,0 +1,22 @@
+# fixture-marker: local-profile-head
+mixed-port: 7890
+dns:
+  enable: true
+  nameserver:
+    - 1.1.1.1
+
+proxies:
+  - name: local-fixture
+    type: socks5
+    server: 127.0.0.1
+    port: 1080
+
+proxy-groups:
+  - name: PROXY
+    type: select
+    proxies:
+      - local-fixture
+
+rules:
+  - MATCH,PROXY
+# fixture-marker: local-profile-tail

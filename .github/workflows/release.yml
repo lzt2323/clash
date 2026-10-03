@@ -1,0 +1,56 @@
+name: Build standalone Linux releases
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release tag (e.g. v0.1.0)
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pinned complete bundle
+        env:
+          VERSION: ${{ inputs.version || github.ref_name }}
+        run: python3 packaging/build_release.py --arch '${{ matrix.arch }}' --version "$VERSION" --output dist
+      - name: Validate real installation and uninstall
+        if: matrix.arch == 'amd64'
+        run: python3 tests/full_bundle_test.py --archive dist/clash-linux-amd64.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bundle-${{ matrix.arch }}
+          path: |
+            dist/*.tar.gz
+            dist/*.sha256
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: bundle-*
+          merge-multiple: true
+          path: dist
+      - name: Publish packages, checksums, installer and source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version || github.ref_name }}
+        run: |
+          cat dist/*.sha256 > dist/SHA256SUMS
+          cp install.sh packaging/get.sh dist/
+          python3 packaging/export_source.py --output runtime/source-export --archive "dist/clash-linux-source-$VERSION.tar.gz"
+          gh release create "$VERSION" dist/* --title "Clash Linux $VERSION" --notes "Linux amd64 / arm64 bundles with private Python and Mihomo. See README for installation and uninstall instructions."

@@ -1,0 +1,20 @@
+# fixture-marker: provider-only-head
+dns:
+  enable: true
+  nameserver:
+    - 1.1.1.1
+
+proxy-providers:
+  subscription:
+    type: file
+    path: ./providers/subscription.yaml
+
+proxy-groups:
+  - name: PROXY
+    type: select
+    use:
+      - subscription
+
+rules:
+  - MATCH,PROXY
+# fixture-marker: provider-only-tail

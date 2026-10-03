@@ -1,0 +1,37 @@
+# Mihomo configuration template.
+# Dynamic values are inserted by scripts/generate_mihomo_config.sh.
+# Do not remove or rename the @generate-* marker lines.
+
+# @generate-runtime@
+
+mode: rule
+log-level: info
+ipv6: true
+unified-delay: true
+tcp-concurrent: true
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+# @generate-provider@
+
+proxy-groups:
+  - name: PROXY
+    type: select
+    proxies:
+      - AUTO
+      - DIRECT
+    use:
+      - subscription
+  - name: AUTO
+    type: url-test
+    use:
+      - subscription
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 5000
+    lazy: true
+
+rules:
+  - MATCH,PROXY

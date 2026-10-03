@@ -1,0 +1,29 @@
+name: Terminal MVP checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  terminal-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 jq curl gzip coreutils openssl
+      - name: Subscription transactions
+        run: python3 -B tests/terminal_mvp_test.py
+      - name: Terminal menu behavior
+        run: python3 -B tests/terminal_menu_test.py
+      - name: Shell, worker protocol and curses PTY workbench contracts
+        run: bash tests/run.sh
+      - name: Install pinned Mihomo for Linux integration
+        run: ./clash install
+      - name: Real Linux core with local subscription and upstream fixtures
+        run: MIHOMO_BINARY="$PWD/bin/mihomo" python3 -B tests/terminal_mvp_integration.py
