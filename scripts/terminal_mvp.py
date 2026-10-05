@@ -20,6 +20,9 @@ import urllib.parse
 import urllib.request
 import uuid
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from operation_lock import LockError, operation_lock
+
 
 class Error(RuntimeError):
     pass
@@ -31,7 +34,7 @@ class OperationCancelled(Error):
 
 def mutation(method):
     @functools.wraps(method)
-    def wrapped(self, *args, **kwargs):
+    def locked(self, *args, **kwargs):
         self.directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         with open(self.directory / 'lock', 'a') as lock:
             os.chmod(lock.name, 0o600)
@@ -42,6 +45,13 @@ def mutation(method):
             self._recover()
             self._checkpoint()
             return method(self, *args, **kwargs)
+    @functools.wraps(method)
+    def wrapped(self, *args, **kwargs):
+        try:
+            with operation_lock(self.root):
+                return locked(self, *args, **kwargs)
+        except LockError as exc:
+            raise Error(str(exc)) from None
     return wrapped
 
 
@@ -592,7 +602,7 @@ def worker(manager):
     return 0 if payload['ok'] else 1
 
 
-def main():
+def _main():
     try:
         manager = Manager()
         command = sys.argv[1] if len(sys.argv) > 1 else 'menu'
@@ -632,6 +642,15 @@ def main():
     except (EOFError, KeyboardInterrupt):
         print('\n已取消。', file=sys.stderr)
         return 130
+
+
+def main():
+    try:
+        with operation_lock(Path(__file__).resolve().parent.parent):
+            return _main()
+    except LockError as exc:
+        print('错误：' + str(exc), file=sys.stderr)
+        return 1
 
 
 if __name__ == '__main__':

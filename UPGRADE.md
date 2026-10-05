@@ -1,49 +1,90 @@
-# Linux 已部署实例升级方案
+# Linux 程序升级指南
 
-调研日期：2026-10-05。以下区分已实现能力与建议方案；文中的 `clash upgrade`、`clash rollback` 尚未实现。
+v0.2.0 起支持完整程序升级、回滚与中断恢复。适用于带 `.clash-install.json` 的 Linux glibc amd64 / arm64 正式安装；无标记源码目录不自动覆盖。
 
-## 当前部署与限制
+## v0.1.0 / v0.1.1 首次升级
 
-- GitHub `lzt2323/clash` 是源码和 Release 发布源；下载服务器镜像版本目录，顶层 `install.sh` / `get.sh` 指向当前发行版本。
-- 安装包覆盖 Linux glibc amd64、arm64，包含独立 Python 和 Mihomo；默认安装到 `~/.local/share/clash-linux`，不要求系统 Python 或 root。
-- `BUILD.json` 列出版本、架构和程序文件；`.clash-install.json` 记录安装路径和版本。用户订阅、选择状态位于 `runtime/mvp`，配置及提供者缓存位于 `conf`，还可能存在 `.env`、日志及用户自行添加的文件。
-- `install.sh` 已有 SHA-256 校验、解包路径检查、安装锁和失败回滚，但明确拒绝跨版本覆盖；同版本重装只重新接入 shell，不替换程序。
-- `clash update` / `clash version` 面向 Mihomo 核心，不代表工作台版本。卸载时保留的数据也带版本标记，不能用“卸载后直接装新版”绕过迁移。
-- 本次 v0.1.1 是工作台修复，Python、Mihomo 和数据格式不变。下载服务器上的旧源码试运行目录不是带安装标记的标准安装，应作为人工维护实例处理。
+先退出所有正在使用该安装目录的 Clash 菜单，然后运行：
 
-## 方案比较
+```bash
+curl -fsSL https://download.getplus.dpdns.org/install.sh \
+  -o /tmp/clash-install.sh && bash /tmp/clash-install.sh --upgrade
+```
 
-| 方案 | 与现状的适配 | 结论 |
-| --- | --- | --- |
-| 在部署目录 `git pull` | 标准发行包没有 `.git`；无法同时可靠管理 Python、核心和文件删除 | 仅用于开发源码目录，不作为用户升级入口 |
-| 重跑安装脚本并允许直接覆盖 | 能复用现有下载逻辑，但旧进程、运行锁、数据备份和失败恢复仍需处理 | 不能只删除版本检查就当作支持升级 |
-| 专用升级命令，复用完整发行包 | 保持免 root、双架构、自带 Python、主源及 GitHub 回退 | 推荐近期实施 |
-| deb/rpm / apt / yum 仓库 | 可用包管理器升级，但需要多套打包、仓库签名及系统安装布局 | 有企业批量管理需求时再做 |
-| systemd-sysupdate / 容器镜像 | 适用于系统组件、镜像及版本化目录；现有工具依赖用户 shell 接入和可写安装根目录 | 暂不引入 |
+默认目录为 `~/.local/share/clash-linux`。使用自定义目录时追加 `--prefix /绝对路径`。安装器下载并校验新版包后，使用包内独立 Python 执行迁移，无需安装系统 Python；已有 shell 接入不变。
 
-## 推荐升级接口与过程（待实现）
+普通安装命令仍拒绝跨版本覆盖，必须显式指定 `--upgrade`；同版本重装仍只修复 shell 接入。
 
-建议提供 `clash upgrade --check`、`clash upgrade`、`clash upgrade --version vX.Y.Z`、`clash rollback`，以及区分工作台与核心版本的查询命令。TUI 只提示有新版，用户退出菜单后执行升级；默认不后台自动安装。
+## 日常升级
 
-1. **识别安装**：校验安装标记、路径、架构和数据格式。无标记的源码部署只报告迁移方法，不自动覆盖。
-2. **确定版本**：主站提供小型 `latest.json`，包含版本、双架构文件名及摘要、数据格式版本、最低可升级版本、发行说明。主站失败时用 GitHub latest Release；取得版本后，下载全部固定在该版本目录，禁止逐个从浮动 latest 地址拼装。
-3. **提前准备**：在同文件系统的临时目录下载完整包，校验摘要、成员路径、架构、包内 Python 和核心可执行性。校验完成前不停止现有代理。
-4. **互斥与数据保留**：升级锁需同时协调安装、卸载、MVP 状态修改和核心生命周期。退出旧 TUI，阻止新的修改操作。备份安装标记、清单、配置、订阅状态及 shell 接入；保留不属于旧程序清单的用户文件，并拒绝与新版程序文件冲突的路径。
-5. **切换与检查**：记录核心原本是否运行。通用整包升级应先短暂停止核心，再将旧目录改名保留、新目录放到相同安装路径；迁移数据时不能复制锁文件冒充互斥，需要安装目录外的稳定事务锁。验证包内 CLI、配置和代理健康；原本停止的核心不自动启动。纯 UI 更新可以以后另做不重启核心的优化。
-6. **回滚与恢复**：健康检查失败时恢复原目录、标记、shell 接入和原运行状态。保存持久事务记录，使断电后下一次启动能恢复，不能只依赖 shell trap。数据格式不兼容时，回滚需恢复对应备份；升级后用户新增的数据不能无提示丢弃。
+```bash
+clash app-version                       # 工作台版本
+clash upgrade --check                   # 当前版本、最新版本、是否可升级
+clash upgrade                           # 升级到当前稳定版本
+clash upgrade --version v0.2.0           # 固定版本；相同版本直接返回
+clash rollback                          # 恢复上一版程序，保留当前兼容数据
+```
 
-短期维持原安装路径可减少 shell、配置绝对路径及卸载规则的改动。长期可拆成只读 `releases/<version>`、稳定 `current` 入口和独立数据目录，但需要先改造当前对符号链接的拒绝策略与基于脚本位置计算根目录的逻辑。
+`clash version` 和 `clash update` 仍针对 Mihomo 核心，与完整程序升级分开。升级器拒绝用 `upgrade` 降级；回退使用 `rollback`。不会后台自动下载或安装。
 
-## 发布与验收
+回滚到 v0.1.x 后，旧程序没有 `upgrade` 命令，再次升级需使用上面的新安装器。若未来发行包更换独立 Python 版本，程序内升级会提示改用独立安装器，避免切换目录时破坏当前解释器的运行环境。
 
-- 每次修复使用新版本号，不覆盖 v0.1.0 等旧包。GitHub 构建和 Linux 回归通过后，下载服务器先把完整新版本放进暂存目录，校验后发布；最后更新顶层安装入口和 latest 元数据。
-- amd64 使用真实 Linux 进行安装、核心、升级、回滚验证；arm64 除打包检查外应增加原生机器或模拟运行验收。
-- 必测：v0.1.0 升新版保留订阅/节点/模式；代理原本运行或停止；下载中断、校验错误、磁盘不足、并发 TUI、安装中断；主源失败回退同版本；失败回滚和离线升级。
-- HTTPS 加 SHA-256 能检测文件损坏，但摘要与包来自同一被入侵源时不能提供独立真实性保证。规模扩大后引入签名元数据、过期时间和回退防护，参考 TUF；这不应成为当前小修复发布的阻塞项。
+主站 `latest.json` 用于版本发现，失败时回退到 GitHub latest Release。版本确定后，安装包与 SHA256SUMS 均从同一固定版本目录获取，主源失败会尝试 GitHub 的同版本包。
 
-## 官方资料
+## 保留与运行状态
 
-- [GitHub：最新版本与固定版本下载链接](https://docs.github.com/en/repositories/releasing-projects-on-github/linking-to-releases)
-- [GitHub：Release API（版本、资产与摘要）](https://docs.github.com/en/rest/releases/releases)
-- [systemd：sysupdate 官方手册源码](https://github.com/systemd/systemd/blob/main/man/systemd-sysupdate.xml)
-- [TUF：更新元数据与安全模型](https://theupdateframework.io/docs/overview/)
+- 保留订阅、节点选择、模式、`conf`、`runtime/mvp`、`.env`、日志和非程序清单中的用户文件，并保留文件权限。用户文件与新版程序冲突时拒绝升级。
+- 拒绝安装树中的符号链接和特殊文件，避免迁移越过安装目录；遇到这种情况请先检查并处理对应文件。
+- 先完成下载、摘要/清单/架构检查和程序预检，再进入切换。原来运行的核心会短暂停止并启动，原来停止的核心保持停止；核心启动和健康检查失败时恢复旧版。
+- 安装、升级、卸载、菜单和状态修改协调使用安装目录外的锁；目录被占用时退出其他菜单、等待操作结束后重试。旧版菜单另做 Linux 进程检查。
+- 手动回滚保留升级后新产生的兼容用户数据，不用历史备份覆盖当前订阅。当前仅支持数据格式 1；未来不兼容格式会拒绝迁移或回滚。
+
+升级器保留一个上一版本目录：安装根目录的同级 `.目录名.previous`，其中含历史配置和订阅，应视作私密备份。新的成功升级/回滚会替换这个备份。普通卸载保留它；`clash uninstall --purge` 会在验证归属后将它与当前用户数据一并删除。
+
+## 离线升级
+
+从指定 Release 下载对应架构安装包，并从该 Release 的 SHA256SUMS 取得摘要：
+
+```bash
+clash upgrade --archive /path/clash-linux-amd64.tar.gz --sha256 <SHA256>
+```
+
+旧版首次离线升级使用新版安装器：
+
+```bash
+bash install.sh --upgrade --version v0.2.0 \
+  --archive /path/clash-linux-amd64.tar.gz --sha256 <SHA256>
+```
+
+ARM64 使用 `clash-linux-arm64.tar.gz`。只用 GitHub 下载可添加 `--server ''`；镜像选项必须使用 HTTPS。
+
+## 中断恢复
+
+升级事务记录位于安装根目录同级的 `.目录名.upgrade.json`。尚未提交的切换恢复旧版本和原运行状态；已提交的切换完成备份收尾。发现未完成事务时，普通操作会提示恢复：
+
+```bash
+clash recover
+```
+
+如果进程被强杀或断电时安装目录恰好处于切换间隙，`clash` 可能暂时不存在。重新下载新版安装器，使用包内 Python 恢复：
+
+```bash
+bash /tmp/clash-install.sh --recover --prefix /原安装目录
+```
+
+不要删除事务记录、`.目录名.upgrade-work-*` 或 `.目录名.previous` 来绕过报错。恢复失败时保留这些文件，先检查磁盘、权限和核心日志。离线恢复同样可以追加 `--version`、`--archive` 和 `--sha256`。
+
+## 发布维护
+
+每次发布使用新版本号，保留旧版本安装包。GitHub Actions 在 AMD64 与 ARM64 原生 Linux 上构建，执行旧版安装、升级、回滚、核心运行和卸载验收后发布。`packaging/release_metadata.py` 从核对后的双架构包生成 `latest.json`。
+
+下载服务器使用：
+
+```bash
+python3 packaging/mirror_release.py --version v0.2.0 \
+  --web-root /srv/clash-downloads --backup-dir /安全路径/发布前入口备份
+```
+
+该工具核对 GitHub 资产摘要、安装包清单和 latest 元数据，先发布完整版本目录，再替换安装入口，最后发布 latest.json。已存在的版本目录不会覆盖；发布入口保留备份。
+
+HTTPS 与 SHA-256 用于传输及文件完整性校验，目前没有独立签名信任链。后续可引入签名元数据、过期时间和防回退机制，参考 [TUF](https://theupdateframework.io/docs/overview/)。[GitHub Release API](https://docs.github.com/en/rest/releases/releases) 提供版本及资产元数据，[固定版本与 latest 链接](https://docs.github.com/en/repositories/releasing-projects-on-github/linking-to-releases) 用于发布和发现。

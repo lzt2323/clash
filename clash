@@ -28,6 +28,7 @@ readonly RESTART_SCRIPT="${CLASH_RESTART_SCRIPT:-${PROJECT_DIR}/restart.sh}"
 readonly SHUTDOWN_SCRIPT="${CLASH_SHUTDOWN_SCRIPT:-${PROJECT_DIR}/shutdown.sh}"
 readonly SELECTOR_SCRIPT="${CLASH_SELECTOR_SCRIPT:-${PROJECT_DIR}/scripts/clash_proxy-selector.sh}"
 readonly UNINSTALL_SCRIPT="${CLASH_UNINSTALL_SCRIPT:-${PROJECT_DIR}/scripts/uninstall.py}"
+readonly UPGRADE_SCRIPT="${CLASH_UPGRADE_SCRIPT:-${PROJECT_DIR}/scripts/upgrade.py}"
 readonly MVP_SCRIPT="${CLASH_MVP_SCRIPT:-${PROJECT_DIR}/scripts/terminal_mvp.py}"
 readonly CONFIG_FILE="${MIHOMO_CONFIG:-${PROJECT_DIR}/conf/config.yaml}"
 readonly BINARY_FILE="${MIHOMO_BINARY:-${PROJECT_DIR}/bin/mihomo}"
@@ -114,6 +115,11 @@ command_uninstall() {
     [[ $# -eq 0 || ( $# -eq 1 && "$1" == --purge ) ]] || die "用法：clash uninstall [--purge]"
     [[ -r "$UNINSTALL_SCRIPT" ]] || die "缺少卸载程序，请重新运行安装器修复此安装。"
     command_python "$UNINSTALL_SCRIPT" "$@"
+}
+
+command_upgrade() {
+    [[ -r "$UPGRADE_SCRIPT" ]] || die "缺少升级程序，请使用最新版安装器的 --upgrade 选项。"
+    command_python "$UPGRADE_SCRIPT" --root "$PROJECT_DIR" "$@"
 }
 
 command_status() {
@@ -238,6 +244,13 @@ usage() {
   clash shell-init      安装当前用户的命令与 shell 集成
   clash uninstall       卸载程序，保留订阅与配置数据
   clash uninstall --purge  卸载并删除项目数据
+  clash upgrade --check 检查程序新版本
+  clash upgrade         升级整个程序，保留配置和订阅
+  clash upgrade --version vX.Y.Z  安装指定版本
+  clash upgrade --archive FILE --sha256 HASH  使用离线发行包升级
+  clash rollback        恢复上一个程序版本
+  clash recover         恢复中断的升级
+  clash app-version     查看程序版本（version 仍查看内核版本）
   clash help            显示帮助
 
 第一次使用：运行 ./clash install 安装内核，再运行 ./clash shell-init。
@@ -268,7 +281,25 @@ if [[ -e "$MANAGED_STATE" || -e "$INSTALL_MARKER" ]]; then
     esac
 fi
 
+# Hold a shared lock throughout normal CLI and TUI operations. Upgrade and
+# uninstall acquire an exclusive lock in their Python entry points. The wrapper
+# recognizes only a live inherited descriptor, never a boolean bypass flag.
 case "$command" in
+    help|-h|--help|env|off|shell|upgrade|rollback|recover|app-version|uninstall) ;;
+    *)
+        lock_helper="$PROJECT_DIR/scripts/operation_lock.py"
+        if [[ -f "$lock_helper" ]]; then
+            if ! command_python -c 'import sys; sys.path.insert(0, sys.argv[1]); from operation_lock import inherited_fd; sys.exit(inherited_fd(sys.argv[2]) is None)' "$PROJECT_DIR/scripts" "$PROJECT_DIR"; then
+                command_python "$lock_helper" --root "$PROJECT_DIR" -- bash "$PROJECT_DIR/clash" "$command" "$@"
+                exit $?
+            fi
+        fi
+        ;;
+esac
+
+case "$command" in
+    upgrade) command_upgrade upgrade "$@" ;;
+    rollback|recover|app-version) [[ $# -eq 0 ]] || die "用法：clash $command"; command_upgrade "$command" ;;
     init) command_init "$@" ;;
     start) [[ $# -eq 0 ]] || die "用法：clash start"; command_start ;;
     stop) [[ $# -eq 0 ]] || die "用法：clash stop"; command_stop ;;

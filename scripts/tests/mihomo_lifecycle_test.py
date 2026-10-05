@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Offline lifecycle contracts: only disposable processes, no sockets or network."""
 import json
+import fcntl
 import os
 from pathlib import Path
 import signal
@@ -75,7 +76,7 @@ print('{"version":"synthetic"}')
             except ProcessLookupError:
                 pass
 
-    def launch(self):
+    def launch(self, pass_fds=()):
         # Replace only the /proc adapter to make this contract portable to macOS.
         # The real startup loop, signal handling, curl auth and cleanup all run.
         command = '''source "$TEST_RUNTIME" binary >/dev/null
@@ -83,7 +84,7 @@ pid_is_mihomo() { [[ -f "$TEST_READY" ]]; }
 command_start
 '''
         return subprocess.Popen(["bash", "-c", command], env=self.env,
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, pass_fds=pass_fds)
 
     def assert_headers_removed(self):
         records = [json.loads(line) for line in self.requests.read_text().splitlines()]
@@ -109,6 +110,19 @@ command_start
         self.assertTrue((self.runtime_dir / "mihomo.pid").exists())
         self.assertNotIn(self.env["MIHOMO_API_SECRET"], stdout + stderr)
         self.assert_headers_removed()
+
+    def test_core_does_not_keep_launcher_operation_lock(self):
+        path = self.root / 'operation.lock'
+        with path.open('w') as lock:
+            fcntl.flock(lock, fcntl.LOCK_SH | fcntl.LOCK_NB)
+            self.env['CLASH_OPERATION_LOCK_FD'] = str(lock.fileno())
+            process = self.launch(pass_fds=(lock.fileno(),))
+            _, stderr = process.communicate(timeout=6)
+            self.assertEqual(process.returncode, 0, stderr)
+        os.kill(int(self.spawned.read_text()), 0)
+        with path.open('r+') as probe:
+            # A live core holding the descriptor would block future upgrades.
+            fcntl.flock(probe, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
     def test_wall_clock_timeout_kills_and_reaps_term_ignoring_child(self):
         self.env.update(MIHOMO_START_TIMEOUT="2", TEST_CURL_MODE="slow-fail", TEST_IGNORE_TERM="1")

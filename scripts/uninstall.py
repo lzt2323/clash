@@ -48,7 +48,7 @@ def _json_file(root, name):
         raise UninstallError('安装标记或安装清单损坏，拒绝卸载。') from None
 
 
-def _validate(root):
+def _validate(root, marker_prefix=None):
     root = Path(os.path.abspath(root))
     forbidden = {Path('/'), Path.home().resolve(), Path('/home'), Path('/root'),
                  Path('/usr'), Path('/usr/local'), Path('/etc'), Path('/var'), Path('/tmp')}
@@ -56,7 +56,7 @@ def _validate(root):
         raise UninstallError('安装路径不安全，拒绝卸载。')
     marker = _json_file(root, '.clash-install.json')
     if (type(marker.get('format')) is not int or marker['format'] != 1
-            or marker.get('prefix') != str(root) or not isinstance(marker.get('version'), str)
+            or marker.get('prefix') != str(marker_prefix or root) or not isinstance(marker.get('version'), str)
             or not marker['version']):
         raise UninstallError('安装标记与当前目录不匹配，拒绝卸载。')
     build = _json_file(root, 'BUILD.json')
@@ -130,8 +130,13 @@ def _write_data_marker(root, marker):
             os.unlink(temporary)
 
 
-def uninstall(root=None, purge=False, manager_factory=None, shell_runner=subprocess.run):
+def _uninstall(root=None, purge=False, manager_factory=None, shell_runner=subprocess.run):
     root, marker, paths = _validate(root or Path(__file__).absolute().parents[1])
+    backup = root.parent / ('.' + root.name + '.previous')
+    if purge and _exists(backup):
+        # Rollback releases retain the live prefix in their installation marker.
+        # Validate the entire application manifest before stopping or deleting.
+        _validate(backup, marker_prefix=root)
     data = root / 'runtime/mvp'
     for directory in (root / 'runtime', data):
         _ancestors(root, directory)
@@ -198,6 +203,7 @@ def uninstall(root=None, purge=False, manager_factory=None, shell_runner=subproc
         if purge:
             _remove_tree(root / 'conf')
             _remove_tree(data)
+            _remove_tree(backup)
             if _exists(root / '.clash-data.json'):
                 (root / '.clash-data.json').unlink()
         for directory in sorted(directories | {root / 'runtime'}, key=lambda value: len(value.parts), reverse=True):
@@ -207,9 +213,26 @@ def uninstall(root=None, purge=False, manager_factory=None, shell_runner=subproc
                 pass
     remaining = [path.name for path in root.iterdir() if path.name not in ('conf', 'runtime', '.clash-data.json')]
     messages = ['卸载完成。' + ('订阅数据已清除。' if purge else '订阅数据已保留，可在原目录重新安装。')]
+    if not purge and _exists(backup):
+        messages.append('回滚备份（含订阅数据）已保留：' + str(backup))
     if remaining:
         messages.append('目录中仍有未列入安装清单的文件，已保留，请自行检查。')
     return messages
+
+
+def uninstall(root=None, purge=False, manager_factory=None, shell_runner=subprocess.run):
+    # The module is also imported by maintenance tools and offline tests.
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from operation_lock import LockError, operation_lock
+    root = Path(root or Path(__file__).absolute().parents[1])
+    try:
+        with operation_lock(root, exclusive=True):
+            journal = root.parent / ('.' + root.name + '.upgrade.json')
+            if _exists(journal):
+                raise UninstallError('存在未完成的升级，请先运行 clash recover 再卸载。')
+            return _uninstall(root, purge, manager_factory, shell_runner)
+    except LockError as exc:
+        raise UninstallError(str(exc)) from None
 
 
 def main():

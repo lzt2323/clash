@@ -162,8 +162,14 @@ command_start() {
     command_validate
     mkdir -p -- "$RUNTIME_DIR" "$(dirname -- "$MIHOMO_LOG")"
 
-    nohup "$MIHOMO_BINARY" -d "$MIHOMO_CONFIG_DIR" -f "$MIHOMO_CONFIG" \
-        >>"$MIHOMO_LOG" 2>&1 &
+    (
+        # The long-lived core must not retain the launcher's lifecycle lock.
+        if [[ "${CLASH_OPERATION_LOCK_FD:-}" =~ ^[0-9]+$ ]] && (( CLASH_OPERATION_LOCK_FD >= 3 )); then
+            eval "exec ${CLASH_OPERATION_LOCK_FD}>&-"
+        fi
+        unset CLASH_OPERATION_LOCK_FD CLASH_OPERATION_LOCK_ROOT CLASH_OPERATION_LOCK_MODE
+        exec nohup "$MIHOMO_BINARY" -d "$MIHOMO_CONFIG_DIR" -f "$MIHOMO_CONFIG"
+    ) >>"$MIHOMO_LOG" 2>&1 &
     pid=$!
     # Capture the numeric child PID now; function locals unwind before EXIT traps.
     trap "cleanup_start $pid" EXIT

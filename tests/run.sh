@@ -254,6 +254,14 @@ else
 	fail 'workbench layout and keyboard unit tests'
 fi
 
+for suite in operation_lock upgrade upgrade_integration; do
+    if python3 -B "$ROOT_DIR/tests/${suite}_test.py"; then
+        pass "$suite tests"
+    else
+        fail "$suite tests"
+    fi
+done
+
 for suite in uninstall package export_source; do
     if python3 -B "$ROOT_DIR/tests/${suite}_test.py"; then
         pass "$suite tests"

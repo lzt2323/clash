@@ -151,7 +151,7 @@ pass
 
 marker "$prefix" .clash-install.json v9.0.0
 reject offline "$test_home" --no-shell
-contains "$TASK_TEST_DIR/rejected.out" '暂不支持升级'
+contains "$TASK_TEST_DIR/rejected.out" '请使用 --upgrade'
 contains "$prefix/conf/config.yaml" 'user config'
 marker "$prefix" .clash-install.json v0.1.0
 pass

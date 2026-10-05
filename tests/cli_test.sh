@@ -4,6 +4,7 @@ set -euo pipefail
 readonly ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly TEST_DIR="$(mktemp -d "${TMPDIR:-/tmp}/clash-cli-test.XXXXXXXX")"
 readonly CLI="${TEST_DIR}/clash"
+readonly CANONICAL_TEST_DIR="$(cd -- "$TEST_DIR" && pwd)"
 readonly CALLS="${TEST_DIR}/calls"
 trap 'rm -rf -- "$TEST_DIR"' EXIT
 
@@ -64,6 +65,7 @@ shutdown_stub="${TEST_DIR}/shutdown"
 selector_stub="${TEST_DIR}/selector"
 shell_stub="${TEST_DIR}/shell"
 mvp_stub="${TEST_DIR}/mvp.py"
+upgrade_stub="${TEST_DIR}/upgrade.py"
 config_file="${TEST_DIR}/config.yaml"
 log_file="${TEST_DIR}/mihomo.log"
 make_stub "$configure_stub" "configure"
@@ -85,6 +87,7 @@ if sys.argv[1:] == ['ensure']:
     print('内核已就绪')
     sys.exit(int(os.environ.get('CLASH_TEST_ENSURE_STATUS', '0')))
 PYTHON
+cp "$mvp_stub" "$upgrade_stub"
 printf '%s\n' \
     '#!/usr/bin/env bash' \
     'printf "doctor:%s:%s\n" "${DOCTOR_ALLOW_MISSING_MIHOMO:-0}" "$*" >>"$CLASH_TEST_CALLS"' \
@@ -112,6 +115,7 @@ run_cli() {
     CLASH_SHUTDOWN_SCRIPT="$shutdown_stub" \
     CLASH_SELECTOR_SCRIPT="$selector_stub" \
     CLASH_MVP_SCRIPT="$mvp_stub" \
+    CLASH_UPGRADE_SCRIPT="$upgrade_stub" \
     MIHOMO_BINARY="/bin/true" \
     MIHOMO_CONFIG="$config_file" \
     MIHOMO_LOG="$log_file" \
@@ -196,6 +200,22 @@ assert_calls "shell-integration:install --shell bash" \
 : >"$CALLS"
 run_cli version >/dev/null
 assert_calls "runtime:version" "version delegates to runtime"
+
+
+for program_command in upgrade rollback recover app-version; do
+    : >"$CALLS"
+    run_cli "$program_command" >/dev/null
+    assert_calls "mvp:--root $CANONICAL_TEST_DIR $program_command" "$program_command delegates to application upgrader"
+done
+: >"$CALLS"
+run_cli upgrade --archive '/tmp/release package.tar.gz' --sha256 abc >/dev/null
+assert_calls "mvp:--root $CANONICAL_TEST_DIR upgrade --archive /tmp/release package.tar.gz --sha256 abc" "offline upgrade preserves archive arguments"
+: >"$CALLS"
+run_cli upgrade --check >/dev/null
+assert_calls "mvp:--root $CANONICAL_TEST_DIR upgrade --check" "upgrade check reaches application updater"
+: >"$CALLS"
+run_cli update >/dev/null
+assert_calls "install:" "update continues to update only the core"
 
 output="$(CLASH_HTTP_PROXY='http://127.0.0.1:17890' run_cli env)"
 assert_contains "$output" 'export http_proxy=http://127.0.0.1:17890' \

@@ -26,7 +26,27 @@ clash
 
 默认安装到 `~/.local/share/clash-linux`。安装包优先从下载服务器获取，失败时自动尝试 GitHub；主站无法访问时，可从 [GitHub Release](https://github.com/lzt2323/clash/releases/latest) 下载 `install.sh` 后运行。
 
-当前发行版为 **v0.1.1**，修复任务导航与内容面板的即时联动。已有安装暂不支持跨版本原地升级；重跑同版本安装脚本只修复 shell 接入。`clash update` 更新的是 Mihomo 核心，不会更新终端工作台。现有部署限制与后续升级方案见 [升级方案](UPGRADE.md)。
+当前发行版为 **v0.2.0**，支持保留配置和订阅升级、失败恢复及手动回滚。
+
+## 升级已有安装
+
+已经安装 v0.1.0 / v0.1.1 的用户，先退出 Clash 菜单，用新安装器完成首次升级：
+
+```bash
+curl -fsSL https://download.getplus.dpdns.org/install.sh \
+  -o /tmp/clash-install.sh && bash /tmp/clash-install.sh --upgrade
+```
+
+自定义安装目录需追加 `--prefix /你的安装目录`。升级期间正在运行的核心会短暂重启；原本停止的核心保持停止。首次升级之后使用：
+
+```bash
+clash app-version       # 查看工作台版本
+clash upgrade --check   # 只检查更新
+clash upgrade           # 更新整个程序，保留订阅、节点选择和配置
+clash rollback          # 恢复上一版本，保留当前兼容数据
+```
+
+`clash update` / `clash version` 仍只针对 Mihomo 核心。旧源码目录没有安装标记，升级器会拒绝覆盖。离线升级、故障恢复和备份说明见 [升级指南](UPGRADE.md)。
 
 ## 第一次使用
 

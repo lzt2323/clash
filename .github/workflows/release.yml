@@ -16,17 +16,29 @@ jobs:
   build:
     strategy:
       matrix:
-        arch: [amd64, arm64]
-    runs-on: ubuntu-latest
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+            previous_sha256: 99162040a34f9386e0584469b3cd9fcf0c06dc760fa679d715d46e705a91589a
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            previous_sha256: a9b5789a6a6e02e2694917b8ac91b676fdd515d9ec7ae98f9e09cc8f72f761e8
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - name: Build pinned complete bundle
         env:
           VERSION: ${{ inputs.version || github.ref_name }}
         run: python3 packaging/build_release.py --arch '${{ matrix.arch }}' --version "$VERSION" --output dist
-      - name: Validate real installation and uninstall
-        if: matrix.arch == 'amd64'
-        run: python3 tests/full_bundle_test.py --archive dist/clash-linux-amd64.tar.gz
+      - name: Validate native installation, upgrade and rollback
+        env:
+          ARCH: ${{ matrix.arch }}
+          PREVIOUS_SHA256: ${{ matrix.previous_sha256 }}
+        run: |
+          curl -fLsS --retry 3 --proto '=https' --proto-redir '=https' "https://github.com/lzt2323/clash/releases/download/v0.1.1/clash-linux-$ARCH.tar.gz" -o /tmp/clash-previous.tar.gz
+          echo "$PREVIOUS_SHA256  /tmp/clash-previous.tar.gz" | sha256sum -c -
+          python3 tests/full_bundle_test.py --archive "dist/clash-linux-$ARCH.tar.gz" --previous-archive /tmp/clash-previous.tar.gz
       - uses: actions/upload-artifact@v4
         with:
           name: bundle-${{ matrix.arch }}
@@ -51,6 +63,7 @@ jobs:
           VERSION: ${{ inputs.version || github.ref_name }}
         run: |
           cat dist/*.sha256 > dist/SHA256SUMS
+          python3 packaging/release_metadata.py --directory dist --version "$VERSION"
           cp install.sh packaging/get.sh dist/
           python3 packaging/export_source.py --output runtime/source-export --archive "dist/clash-linux-source-$VERSION.tar.gz"
           gh release create "$VERSION" dist/* --title "Clash Linux $VERSION" --notes "Linux amd64 / arm64 bundles with private Python and Mihomo. See README for installation and uninstall instructions."

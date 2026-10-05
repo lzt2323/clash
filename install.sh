@@ -3,18 +3,21 @@
 set -euo pipefail
 umask 077
 
-VERSION=v0.1.1
+VERSION=v0.2.0
 SERVER=https://download.getplus.dpdns.org
 GITHUB=https://github.com/lzt2323/clash/releases/download
 PREFIX=${HOME:-}/.local/share/clash-linux
 ARCHIVE=''
 DIGEST=''
 NO_SHELL=0
+UPGRADE=0
+RECOVER=0
 SHELL_NAME=${SHELL:-bash}
 SHELL_NAME=${SHELL_NAME##*/}
 case "$SHELL_NAME" in bash|zsh) ;; *) SHELL_NAME=bash ;; esac
 TXN=''
 LOCK=''
+STALE_LOCK=''
 KIND=''
 COMMITTED=0
 NEW_TARGET=0
@@ -33,12 +36,14 @@ usage() {
     cat <<'EOF'
 用法：bash install.sh [选项]
   --prefix DIR        安装到指定目录（默认 ~/.local/share/clash-linux）
-  --version VERSION   固定发行版本（默认 v0.1.1）
+  --version VERSION   固定发行版本（默认 v0.2.0）
   --server HTTPS_BASE 主下载源；--server '' 只用 GitHub
   --github HTTPS_BASE GitHub Release 下载基址
   --archive FILE --sha256 HASH  使用已下载的离线包
   --shell bash|zsh     接入当前用户的指定 shell
   --no-shell          不修改 shell 配置或命令入口
+  --upgrade           使用包内新升级器更新已有安装（保留 shell 接入）
+  --recover           使用包内升级器恢复中断的升级
 EOF
 }
 
@@ -54,11 +59,14 @@ while (($#)); do
                 --shell) SHELL_NAME=$value ;;
             esac ;;
         --no-shell) NO_SHELL=1; shift ;;
+        --upgrade) UPGRADE=1; shift ;;
+        --recover) RECOVER=1; shift ;;
         -h|--help) usage; exit 0 ;;
         *) die "未知选项：$1" ;;
     esac
 done
 
+((!UPGRADE || !RECOVER)) || die '--upgrade 与 --recover 不能同时使用'
 [[ -n ${HOME:-} && "$HOME" == /* && "$HOME" != / ]] || die 'HOME 必须是当前用户的家目录'
 [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][a-zA-Z0-9.-]+)?$ ]] || die '版本格式应为 v0.1.0'
 [[ "$SHELL_NAME" == bash || "$SHELL_NAME" == zsh ]] || die '仅支持 --shell bash 或 zsh'
@@ -87,8 +95,18 @@ if [[ -e "$PREFIX" ]]; then
     [[ -f "$PREFIX/.clash-install.json" || -f "$PREFIX/.clash-data.json" ]] || die '目标已有文件但没有本项目安装/数据标记，拒绝覆盖'
     [[ ! -L "$PREFIX/.clash-install.json" && ! -L "$PREFIX/.clash-data.json" ]] || die '安装标记不能是符号链接'
 fi
-LOCK="$parent/.${name}.install-lock"
-mkdir -- "$LOCK" 2>/dev/null || die '同一路径的安装正在进行，或存在安装锁；请先检查'
+install_lock="$parent/.${name}.install-lock"
+if mkdir -- "$install_lock" 2>/dev/null; then
+    LOCK="$install_lock"
+    printf '%s\n' "$$" >"$LOCK/owner.pid"
+elif ((RECOVER)) && [[ -d "$install_lock" && ! -L "$install_lock" && -f "$install_lock/owner.pid" && ! -L "$install_lock/owner.pid" ]]; then
+    owner_pid=$(cat -- "$install_lock/owner.pid")
+    [[ "$owner_pid" =~ ^[1-9][0-9]*$ ]] || die '安装锁所有者无效，请人工检查锁目录后恢复'
+    kill -0 "$owner_pid" 2>/dev/null && die '安装锁的进程仍在运行，请等待安装结束再恢复'
+    STALE_LOCK="$install_lock"
+else
+    die '同一路径的安装正在进行，或存在旧格式安装锁；请确认没有安装进程后检查锁目录'
+fi
 
 restore_file() {
     local destination=$1 backup=$2 existed=$3
@@ -118,7 +136,10 @@ cleanup() {
     else
         [[ -z "$TXN" ]] || rm -rf -- "$TXN"
     fi
-    [[ -z "$LOCK" ]] || rmdir -- "$LOCK" 2>/dev/null || true
+    if [[ -n "$LOCK" ]]; then
+        rm -f -- "$LOCK/owner.pid"
+        rmdir -- "$LOCK" 2>/dev/null || true
+    fi
     exit "$code"
 }
 trap cleanup EXIT
@@ -203,9 +224,45 @@ done
 [[ -f "$candidate/LICENSE" && -f "$candidate/BUILD.json" ]] || die '发行包缺少许可证或构建清单'
 PYTHON="$candidate/python/bin/python3"
 "$PYTHON" -E -s -B -c 'import ssl, curses, fcntl' || die '包内 Python 运行检查失败；需要兼容的 Linux glibc 系统'
-KIND=$("$PYTHON" -E -s -B - "$candidate" "$PREFIX" "$VERSION" "$ARCH" <<'PY'
+# Python from the verified candidate locks the descriptor inherited from this
+# shell. flock locks the shared open-file description, so FD 9 keeps it held
+# after Python exits and through the bootstrap upgrader / shell integration.
+operation_lock="$parent/.${name}.operation.lock"
+[[ ! -L "$operation_lock" && (! -e "$operation_lock" || -f "$operation_lock") ]] || die '操作锁路径异常'
+exec 9>>"$operation_lock"
+"$PYTHON" -E -s -B - "$operation_lock" <<'PYLOCK'
+import fcntl, os, stat, sys
+expected, actual = os.lstat(sys.argv[1]), os.fstat(9)
+if not stat.S_ISREG(expected.st_mode) or (expected.st_dev, expected.st_ino) != (actual.st_dev, actual.st_ino):
+    sys.exit('错误：操作锁路径发生变化')
+try:
+    fcntl.flock(9, fcntl.LOCK_EX | fcntl.LOCK_NB)
+except BlockingIOError:
+    sys.exit('错误：菜单或其他操作正在使用安装目录，请先退出菜单后重试。')
+PYLOCK
+# Reclaim only a dead owner's PID lock, and only while the stable kernel lock
+# proves no candidate/engine process is still changing this installation.
+if [[ -n "$STALE_LOCK" ]]; then
+    [[ "$(cat -- "$STALE_LOCK/owner.pid")" == "$owner_pid" ]] || die '安装锁所有者发生变化，请重试'
+    kill -0 "$owner_pid" 2>/dev/null && die '安装锁进程仍在运行，未接管'
+    rm -- "$STALE_LOCK/owner.pid"
+    rmdir -- "$STALE_LOCK" || die '安装锁含有未知文件，拒绝接管'
+    mkdir -- "$STALE_LOCK" || die '无法接管恢复锁'
+    LOCK="$STALE_LOCK"
+    printf '%s\n' "$$" >"$LOCK/owner.pid"
+fi
+export CLASH_OPERATION_LOCK_FD=9 CLASH_OPERATION_LOCK_ROOT="$PREFIX" CLASH_OPERATION_LOCK_MODE=exclusive
+
+if ((RECOVER)); then
+    [[ -f "$candidate/scripts/upgrade.py" ]] || die '该发行包不提供恢复工具'
+    "$PYTHON" -E -s -B "$candidate/scripts/upgrade.py" --root "$PREFIX" recover
+    COMMITTED=1
+    exit 0
+fi
+
+KIND=$("$PYTHON" -E -s -B - "$candidate" "$PREFIX" "$VERSION" "$ARCH" "$UPGRADE" <<'PY'
 import json, pathlib, sys
-candidate, prefix, version, architecture = sys.argv[1:]
+candidate, prefix, version, architecture, upgrade = sys.argv[1:]
 candidate, prefix = pathlib.Path(candidate), pathlib.Path(prefix)
 try:
     build = json.loads((candidate / 'BUILD.json').read_text())
@@ -219,15 +276,30 @@ try:
         assert len(markers) == 1
         record = json.loads((prefix / markers[0]).read_text())
         assert record['format'] == 1 and record['prefix'] == str(prefix)
-        if record['version'] != version:
-            sys.exit('错误：已安装/保留的数据属于其他版本；MVP 暂不支持升级，请保留原目录。')
+        if record['version'] != version and upgrade != '1':
+            sys.exit('错误：目标属于其他版本，请使用 --upgrade 保留数据升级。')
+        if upgrade == '1' and markers[0] != '.clash-install.json':
+            sys.exit('错误：--upgrade 需要完整安装；请先恢复保留数据的原版本。')
         print('installed' if markers[0] == '.clash-install.json' else 'preserved')
     else:
+        if upgrade == '1':
+            sys.exit('错误：--upgrade 需要已有安装目录。')
         print('new')
 except (AssertionError, KeyError, TypeError, ValueError, OSError):
     sys.exit('错误：构建清单或安装标记无效，拒绝覆盖。')
 PY
 ) || die '包或目标目录的元数据检查失败'
+
+if ((UPGRADE)); then
+    [[ -f "$candidate/scripts/upgrade.py" ]] || die '该发行包不提供升级工具'
+    package_hash=$(sha256sum -- "$TXN/package.tar.gz"); package_hash=${package_hash%% *}
+    "$PYTHON" -E -s -B "$candidate/scripts/upgrade.py" --root "$PREFIX" upgrade \
+        --version "$VERSION" --archive "$TXN/package.tar.gz" --sha256 "$package_hash"
+    COMMITTED=1
+    printf '\n已有安装升级完成，shell 接入保持原状：%s\n' "$PREFIX"
+    exit 0
+fi
+[[ ! -e "$parent/.${name}.upgrade.json" ]] || die '存在中断的升级，请运行安装器 --recover'
 
 shell_preflight() {
     local content expected line inside=0 block=''

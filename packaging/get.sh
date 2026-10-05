@@ -2,7 +2,7 @@
 # Small bootstrap: fetch the installer from the same fixed release as its packages.
 set -euo pipefail
 umask 077
-version=v0.1.1
+version=v0.2.0
 server=https://download.getplus.dpdns.org
 github=https://github.com/lzt2323/clash/releases/download
 arguments=("$@")
@@ -13,9 +13,9 @@ while (($#)); do
             case "$1" in --version) version=$2 ;; --server) server=$2 ;; --github) github=$2 ;; esac
             shift 2 ;;
         --prefix|--archive|--sha256|--shell) (($# >= 2)) || exit 2; shift 2 ;;
-        --no-shell) shift ;;
+        --no-shell|--upgrade|--recover) shift ;;
         -h|--help)
-            printf '用法：bash get.sh [--prefix DIR] [--version VERSION] [--server HTTPS_BASE] [--github HTTPS_BASE] [--no-shell]\n'
+            printf '用法：bash get.sh [--prefix DIR] [--version VERSION] [--server HTTPS_BASE] [--github HTTPS_BASE] [--no-shell] [--upgrade|--recover]\n'
             exit 0 ;;
         *) printf '未知选项：%s\n' "$1" >&2; exit 2 ;;
     esac

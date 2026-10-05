@@ -204,6 +204,7 @@ def build(arch, version, cache, output):
         for path in members:
             path.resolve().relative_to(stage.resolve())
         metadata = {'format': 1, 'version': version, 'architecture': arch,
+                    'data_format': 1, 'min_upgrade_version': 'v0.1.0',
                     'python': lock['python']['version'], 'mihomo': core_version,
                     'files': [p.relative_to(stage).as_posix() for p in members],
                     'upstream': {'python_sha256': py['sha256'], 'mihomo_sha256': hashes[core_name],
@@ -239,7 +240,7 @@ def build(arch, version, cache, output):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--arch', choices=('amd64', 'arm64'), required=True)
-    parser.add_argument('--version', default='v0.1.0')
+    parser.add_argument('--version', default='v0.2.0')
     parser.add_argument('--cache', type=Path, default=ROOT / 'runtime/build-cache')
     parser.add_argument('--output', type=Path)
     args = parser.parse_args()

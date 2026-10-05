@@ -4,6 +4,7 @@ import fcntl
 import importlib.util
 import json
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import tempfile
@@ -78,6 +79,41 @@ class UninstallTests(unittest.TestCase):
             self.uninstall()
         self.assertTrue((self.root / 'clash').exists())
         self.assertFalse(self.calls)
+
+    def test_purge_removes_valid_rollback_backup(self):
+        backup = self.root.parent / ('.' + self.root.name + '.previous')
+        shutil.copytree(self.root, backup)
+        self.uninstall(purge=True)
+        self.assertFalse(backup.exists())
+
+    def test_default_preserves_rollback_backup_and_explains_it(self):
+        backup = self.root.parent / ('.' + self.root.name + '.previous')
+        shutil.copytree(self.root, backup)
+        messages = self.uninstall()
+        self.assertTrue(backup.exists())
+        self.assertTrue(any('回滚备份' in message for message in messages))
+
+    def test_purge_refuses_foreign_backup_before_removing_install(self):
+        backup = self.root.parent / ('.' + self.root.name + '.previous')
+        shutil.copytree(self.root, backup)
+        marker = json.loads((backup / '.clash-install.json').read_text())
+        marker['prefix'] = '/some/other/installation'
+        (backup / '.clash-install.json').write_text(json.dumps(marker))
+        with self.assertRaises(module.UninstallError):
+            self.uninstall(purge=True)
+        self.assertTrue((self.root / 'clash').exists())
+        self.assertTrue(backup.exists())
+
+    def test_purge_refuses_symlink_backup_without_following(self):
+        backup = self.root.parent / ('.' + self.root.name + '.previous')
+        external = self.root.parent / 'external'
+        external.mkdir()
+        (external / 'secret').write_text('kept')
+        backup.symlink_to(external, target_is_directory=True)
+        with self.assertRaises(module.UninstallError):
+            self.uninstall(purge=True)
+        self.assertTrue((self.root / 'clash').exists())
+        self.assertEqual((external / 'secret').read_text(), 'kept')
 
     def test_build_manifest_without_self_entry_is_accepted(self):
         self.write('BUILD.json', dict(self.build, files=[name for name in self.files

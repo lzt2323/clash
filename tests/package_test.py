@@ -15,6 +15,9 @@ ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('clash_builder', ROOT / 'packaging/build_release.py')
 builder = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(builder)
+metadata_spec = importlib.util.spec_from_file_location('release_metadata', ROOT / 'packaging/release_metadata.py')
+release_metadata = importlib.util.module_from_spec(metadata_spec)
+metadata_spec.loader.exec_module(release_metadata)
 
 
 def tar_fixture(path, members):
@@ -114,6 +117,8 @@ class PackageTests(unittest.TestCase):
             self.assertTrue(all(member.name.startswith('clash-linux/') for member in members))
             self.assertTrue(all('..' not in Path(member.name).parts for member in members))
             metadata = json.load(tf.extractfile('clash-linux/BUILD.json'))
+            self.assertEqual(metadata['data_format'], 1)
+            self.assertEqual(metadata['min_upgrade_version'], 'v0.1.0')
             expected = {member.name[len('clash-linux/'):] for member in members} - {'BUILD.json'}
             self.assertEqual(set(metadata['files']), expected)
             self.assertNotIn('BUILD.json', metadata['files'])
@@ -146,6 +151,23 @@ class PackageTests(unittest.TestCase):
         lines = (self.output / 'SHA256SUMS').read_text().splitlines()
         self.assertEqual(set(lines), {builder.digest(path) + '  ' + path.name for path in (amd64, arm64)})
         self.assertEqual((self.output / (amd64.name + '.sha256')).read_text().strip(), first + '  ' + amd64.name)
+
+    def test_latest_metadata_matches_both_architectures_and_refuses_corruption(self):
+        self.build()
+        self.build('arm64')
+        result = release_metadata.metadata(self.output, 'v0.1.0')
+        self.assertEqual(result['version'], 'v0.1.0')
+        self.assertEqual(result['data_format'], 1)
+        self.assertEqual(set(result['assets']), {'amd64', 'arm64'})
+        for arch, asset in result['assets'].items():
+            path = self.output / ('clash-linux-' + arch + '.tar.gz')
+            self.assertEqual(asset['sha256'], builder.digest(path))
+            self.assertEqual(asset['size'], path.stat().st_size)
+        with self.assertRaisesRegex(ValueError, 'version/architecture'):
+            release_metadata.metadata(self.output, 'v0.2.0')
+        (self.output / 'clash-linux-arm64.tar.gz').write_bytes(b'broken')
+        with self.assertRaisesRegex(ValueError, 'checksum mismatch'):
+            release_metadata.metadata(self.output, 'v0.1.0')
 
     def test_real_bundle_manifest_is_accepted_by_uninstaller(self):
         archive = self.build()
