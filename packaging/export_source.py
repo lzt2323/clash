@@ -15,7 +15,7 @@ import tempfile
 from urllib.parse import parse_qsl, urlsplit
 
 ROOT_FILES = ('clash', 'install.sh', 'start.sh', 'restart.sh', 'shutdown.sh',
-              'README.md', 'LICENSE', '.gitignore', '.env.example',
+              'README.md', 'UPGRADE.md', 'LICENSE', '.gitignore', '.env.example',
               'packaging/third-party/mihomo-v1.19.29-NOTICES.txt',
               'packaging/third-party/mihomo-v1.19.29-index.json',
               'temp/mihomo_config.template.yaml', 'temp/templete_config.yaml')

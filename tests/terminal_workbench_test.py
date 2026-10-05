@@ -149,6 +149,73 @@ class WorkbenchTest(unittest.TestCase):
         self.assertEqual(app.focus, "list")
         app.submit.assert_not_called()
 
+    def test_navigation_previews_content_without_backend_work(self):
+        for width in (40, 80):
+            with self.subTest(width=width):
+                app = application(width=width)
+                app.submit = mock.Mock()
+                app.key(curses.KEY_LEFT)
+                for key, page, label in (
+                    (curses.KEY_DOWN, 1, "规则"),
+                    ("j", 2, "备用订阅"),
+                    (curses.KEY_DOWN, 3, "重新检测"),
+                    ("j", 0, "自动选择"),
+                    (curses.KEY_UP, 3, "重新检测"),
+                    ("k", 2, "备用订阅"),
+                ):
+                    app.key(key)
+                    self.assertTrue(app.dirty)
+                    self.assertEqual((app.page, app.nav_page, app.focus), (page, page, "nav"))
+                    app.render()
+                    content = [text for y, x, text, _ in app.screen.calls
+                               if y >= app.geom["list"] and y < app.geom["detail"]
+                               and x == app.geom["nav"] + 1]
+                    self.assertTrue(any(label in text for text in content), content)
+                    self.assertTrue(any("预览" in text for _, _, text, _ in app.screen.calls))
+                app.submit.assert_not_called()
+                self.assertFalse(app.diagnose_needed)
+
+    def test_entering_preview_keeps_selection_and_does_not_apply_it(self):
+        for key in (curses.KEY_RIGHT, "\t", "\n"):
+            with self.subTest(key=key):
+                app = application()
+                app.submit = mock.Mock()
+                app.indices = [12, 2, 1, 0]
+                app.key(curses.KEY_LEFT)
+                app.key("j")
+                app.key(key)
+                self.assertEqual((app.page, app.focus), (1, "list"))
+                self.assertEqual(app.selection()[0], "direct")
+                app.submit.assert_not_called()
+                app.key(curses.KEY_LEFT)
+                app.key("k")
+                self.assertEqual(app.indices, [12, 2, 1, 0])
+                self.assertEqual(app.visible()[0], 8)
+
+    def test_busy_navigation_previews_without_queuing_diagnostics(self):
+        app = application()
+        app.job = Job()
+        app.submit = mock.Mock()
+        app.key(curses.KEY_LEFT)
+        app.key("k")
+        self.assertEqual((app.page, app.focus), (3, "nav"))
+        app.submit.assert_not_called()
+        self.assertFalse(app.diagnose_needed)
+        app.key("\t")
+        self.assertTrue(app.diagnose_needed)
+        self.assertEqual(app.focus, "list")
+
+    def test_entering_diagnostic_preview_starts_check_once(self):
+        for key in (curses.KEY_RIGHT, "\t", "\n"):
+            with self.subTest(key=key):
+                app = application()
+                app.submit = mock.Mock()
+                app.key(curses.KEY_LEFT)
+                app.key("k")
+                app.submit.assert_not_called()
+                app.key(key)
+                app.submit.assert_called_once_with("diagnose", [], "检查连接")
+
     def test_auto_is_present_without_provider_auto(self):
         app = application()
         self.assertEqual(app.items()[0], "AUTO")

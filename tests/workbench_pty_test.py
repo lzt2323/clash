@@ -327,6 +327,29 @@ class WorkbenchPTYTests(unittest.TestCase):
             self.assertEqual(terminal.calls("set_mode")[-1]["args"], ["rule"])
             terminal.quit()
 
+    def test_navigation_arrows_refresh_content_before_entering_it(self):
+        for width in (40, 80):
+            with self.subTest(width=width):
+                terminal = self.terminal(cols=width)
+                terminal.send(b"\x1bOD\x1bOB")
+                terminal.wait_for(lambda: "私网直连" in terminal.screen.text)
+                self.assertIn("预览", terminal.screen.text)
+                self.assertNotIn("HK_TEST", terminal.screen.text)
+                terminal.send(b"\x1bOB")
+                terminal.wait_for(lambda: "DEMO_BACKUP" in terminal.screen.text)
+                terminal.send(b"\x1bOB")
+                terminal.wait_for(lambda: "重新检测" in terminal.screen.text)
+                self.assertFalse(terminal.calls("diagnose"))
+                terminal.send(b"\x1bOA")
+                terminal.wait_for(lambda: "DEMO_BACKUP" in terminal.screen.text)
+                self.assertFalse(terminal.calls("select"))
+                self.assertFalse(terminal.calls("set_mode"))
+                self.assertFalse(terminal.calls("use"))
+                terminal.send("\t")
+                self.assertIn("DEMO_BACKUP", terminal.screen.text)
+                self.assertFalse(terminal.calls("use"))
+                terminal.quit()
+
     def test_all_delay_request_ignores_search(self):
         terminal = self.terminal()
         terminal.send("/NO_MATCH\r")

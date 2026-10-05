@@ -159,7 +159,7 @@ def build(arch, version, cache, output):
         extract_python(py_archive, stage)
         extract_licenses(license_archive, stage)
         validate_runtime(stage, arch)
-        files = ['clash', 'start.sh', 'restart.sh', 'shutdown.sh', 'README.md', 'LICENSE', 'install.sh']
+        files = ['clash', 'start.sh', 'restart.sh', 'shutdown.sh', 'README.md', 'UPGRADE.md', 'LICENSE', 'install.sh']
         files += [str(p.relative_to(ROOT)) for p in sorted((ROOT / 'scripts').glob('*'))
                   if p.is_file() and p.suffix in ('.py', '.sh')]
         files += [str(p.relative_to(ROOT)) for p in sorted((ROOT / 'checksums').glob('*.sha256'))]

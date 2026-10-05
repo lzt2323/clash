@@ -3,7 +3,7 @@
 set -euo pipefail
 umask 077
 
-VERSION=v0.1.0
+VERSION=v0.1.1
 SERVER=https://download.getplus.dpdns.org
 GITHUB=https://github.com/lzt2323/clash/releases/download
 PREFIX=${HOME:-}/.local/share/clash-linux
@@ -33,7 +33,7 @@ usage() {
     cat <<'EOF'
 用法：bash install.sh [选项]
   --prefix DIR        安装到指定目录（默认 ~/.local/share/clash-linux）
-  --version VERSION   固定发行版本（默认 v0.1.0）
+  --version VERSION   固定发行版本（默认 v0.1.1）
   --server HTTPS_BASE 主下载源；--server '' 只用 GitHub
   --github HTTPS_BASE GitHub Release 下载基址
   --archive FILE --sha256 HASH  使用已下载的离线包

@@ -98,7 +98,7 @@ invoke() {
         DOWNLOAD_LOG="$TASK_TEST_DIR/download.log" PACKAGE_SUMS="$TASK_TEST_DIR/SHA256SUMS" \
         PACKAGE_ARCHIVE="$TASK_TEST_DIR/package.tar.gz" INSTALLER_SOURCE="$ROOT/install.sh" \
         PYTHONHOME=/not-a-python-home PYTHONPATH=/not-a-python-path \
-        bash "$ROOT/install.sh" "$@"
+        bash "$ROOT/install.sh" --version v0.1.0 "$@"
 }
 offline() { local test_home=$1; shift; invoke "$test_home" --archive "$TASK_TEST_DIR/package.tar.gz" --sha256 "$hash" "$@"; }
 reject() { if "$@" >"$TASK_TEST_DIR/rejected.out" 2>&1; then fail 'operation unexpectedly succeeded'; fi; }
@@ -267,7 +267,7 @@ env HOME="$bootstrap_home" SHELL=/bin/bash PATH="$TASK_TEST_DIR/tools:$PATH" \
     SYSTEM_PYTHON_POISON="$TASK_TEST_DIR/poison" PRIVATE_PYTHON_LOG="$TASK_TEST_DIR/python.log" \
     DOWNLOAD_LOG="$TASK_TEST_DIR/download.log" PACKAGE_SUMS="$TASK_TEST_DIR/SHA256SUMS" \
     PACKAGE_ARCHIVE="$TASK_TEST_DIR/package.tar.gz" INSTALLER_SOURCE="$ROOT/install.sh" \
-    bash "$ROOT/packaging/get.sh" --server https://primary.invalid --github https://fallback.invalid \
+    bash "$ROOT/packaging/get.sh" --version v0.1.0 --server https://primary.invalid --github https://fallback.invalid \
     --archive "$TASK_TEST_DIR/package.tar.gz" --sha256 "$hash" --no-shell >/dev/null 2>&1
 [[ -f "$bootstrap_home/.local/share/clash-linux/.clash-install.json" ]] || fail 'bootstrap fallback failed'
 contains "$TASK_TEST_DIR/download.log" 'https://fallback.invalid/v0.1.0/install.sh'

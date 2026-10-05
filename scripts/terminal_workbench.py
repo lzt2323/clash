@@ -314,6 +314,8 @@ class Workbench:
     def move(self, amount):
         if self.focus == "nav":
             self.nav_page = (self.nav_page + amount) % len(PAGES)
+            # Preview immediately without moving focus or starting backend work.
+            self.page = self.nav_page
         else:
             self.indices[self.page] = max(0, min(len(self.items()) - 1,
                                                 self.indices[self.page] + amount))
@@ -446,8 +448,10 @@ class Workbench:
             if self.focus == "nav":
                 self.switch(self.nav_page)
         elif key == "\t":
-            self.focus = "nav" if self.focus == "list" else "list"
-            self.nav_page = self.page
+            if self.focus == "nav":
+                self.switch(self.nav_page)
+            else:
+                self.focus, self.nav_page = "nav", self.page
         elif key in (curses.KEY_UP, "k"):
             self.move(-1)
         elif key in (curses.KEY_DOWN, "j"):
@@ -636,11 +640,14 @@ class Workbench:
                        "Enter 应用模式" if self.page == 1 else
                        "Enter 使用  a 添加  u 更新  e 编辑  d 删除" if self.page == 2 else
                        "Enter 执行  r 重新检测  R 重启")
-            self.put(y + 1, 1, "←→/Tab 区域  ↑↓/jk 浏览  " + context, width=width - 2)
+            hint = ("↑↓/jk 切换任务并预览  →/Tab/Enter 进入内容" if self.focus == "nav" else
+                    "←→/Tab 区域  ↑↓/jk 浏览  " + context)
+            self.put(y + 1, 1, hint, width=width - 2)
             self.put(y + 2, 1, "1-4 任务  s 启动  x 停止  Esc 返回  ? 帮助  q 退出", width=width - 2)
         else:
             context = "/ 搜索 t 全测" if self.page == 0 else "a 添 u 更 e 改 d 删" if self.page == 2 else "r 检测 R 重启" if self.page == 3 else ""
-            self.put(y + 1, 1, "↑↓ 选 Enter 执行 " + context, width=width - 2)
+            hint = "↑↓ 预览 →/Tab/Enter 进入" if self.focus == "nav" else "↑↓ 选 Enter 执行 " + context
+            self.put(y + 1, 1, hint, width=width - 2)
             self.put(y + 2, 1, "1-4页 s启动 x停止 Esc返 q退 ?帮助", width=width - 2)
 
     def render_dialog(self):
@@ -661,7 +668,7 @@ class Workbench:
             self.put(top + box_height - 3, left + 12, "[确认]", curses.A_REVERSE if dialog["yes"] else 0, inner - 10)
             self.put(top + box_height - 2, left + 2, "Tab 切换  Enter 执行  Esc 取消", width=inner)
         elif dialog["kind"] == "help":
-            help_text = "1-4 切换任务；←→/Tab 切换区域\n↑↓ 或 j/k 浏览，Enter 执行\n/ 搜索；t 全部节点测速\na 添加，u 更新，e 改地址，d 删除\ns 启动核心；x 停止核心\nq 退出；Esc 返回或关闭\n* 当前使用，> 光标所选\n启动核心后，clash on 启用终端代理"
+            help_text = "1-4 切换任务；←→/Tab 切换区域\n导航：↑↓/jk 预览，Enter 进入\n列表：↑↓/jk 浏览，Enter 执行\n/ 搜索；t 全部节点测速\na 添加，u 更新，e 改地址，d 删除\ns 启动核心；x 停止核心\nq 退出；Esc 返回或关闭\n* 当前使用，> 光标所选\n启动核心后，clash on 启用终端代理"
             self.text_lines(top + 2, left + 2, help_text, inner, box_height - 3)
         else:
             field = dialog["field"]

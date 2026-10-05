@@ -46,7 +46,7 @@ class PackageTests(unittest.TestCase):
         self.output, self.cache = self.directory / 'output', self.directory / 'cache'
         self.output.mkdir()
         self.cache.mkdir()
-        for name in ['clash', 'start.sh', 'restart.sh', 'shutdown.sh', 'README.md',
+        for name in ['clash', 'start.sh', 'restart.sh', 'shutdown.sh', 'README.md', 'UPGRADE.md',
                      'LICENSE', 'install.sh', 'scripts/uninstall.py',
                      'scripts/shell_integration.sh', 'scripts/terminal_mvp.py',
                      'temp/mihomo_config.template.yaml', 'temp/templete_config.yaml']:

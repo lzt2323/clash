@@ -2,7 +2,7 @@
 # Small bootstrap: fetch the installer from the same fixed release as its packages.
 set -euo pipefail
 umask 077
-version=v0.1.0
+version=v0.1.1
 server=https://download.getplus.dpdns.org
 github=https://github.com/lzt2323/clash/releases/download
 arguments=("$@")
