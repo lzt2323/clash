@@ -30,7 +30,7 @@ Rust MVP 已在 Linux x86_64 上完成真实核心流量、终端交互、安装
 
 ## 产品文档与视觉
 
-根 README 面向安装预编译包的终端使用者，从添加订阅到 `clash on` 完成首次任务。完整使用与开发说明保留在 `rust/README.md`。公开 Rust 下载入口尚待 GitHub 发布，README 明确标示其可用状态。
+根 README 面向安装预编译包的终端使用者，从添加订阅到 `clash on` 完成首次任务。完整使用与开发说明保留在 `rust/README.md`。Rust 0.5.0 已通过 GitHub Releases 公开分发，README 提供已校验的安装包与一键安装入口。
 
 `docs/guide.html` 是离线分步教程，覆盖订阅、节点、当前终端代理、定时更新与备份。Logo 采用简洁的小猫图形；图形和配色规范见 `docs/brand-guidelines.md`。公开资产只使用示例节点，不包含真实订阅与服务器凭据。
 

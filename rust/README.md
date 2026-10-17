@@ -4,7 +4,7 @@
 
 ## 一键安装
 
-GitHub 发行仓库为 `lzt2323/clash`。`rust-v0.5.0` 公开发布后可使用：
+当前发行版为 [Clash Linux 0.5.0](https://github.com/lzt2323/clash/releases/tag/rust-v0.5.0)，可直接安装：
 
 ```bash
 curl -fsSL https://github.com/lzt2323/clash/releases/download/rust-v0.5.0/install.sh | bash

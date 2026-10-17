@@ -23,10 +23,10 @@ SHA256SUMS
 
 检查草稿文件和版本后，由维护者发布。此后验证真实下载及 README 的一键命令，再移除 README 中“尚待发布”的说明。
 
-当前 0.5.0 入口：
+当前已公开的 [0.5.0 发行版](https://github.com/lzt2323/clash/releases/tag/rust-v0.5.0) 安装入口：
 
 ```bash
 curl -fsSL https://github.com/lzt2323/clash/releases/download/rust-v0.5.0/install.sh | bash
 ```
 
-该地址只有在对应 Release 公开并上传 `install.sh` 后可用。升级程序的在线 JSON 源是独立配置，未随一键安装器启用；现有用户可以重复运行上述安装器或使用 `clash upgrade --archive FILE --sha256 HASH`。
+后续版本须先公开对应 Release 并上传 `install.sh`，再更新 README 安装地址。升级程序的在线 JSON 源是独立配置，未随一键安装器启用；现有用户可以重复运行上述安装器或使用 `clash upgrade --archive FILE --sha256 HASH`。

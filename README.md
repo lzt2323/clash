@@ -21,11 +21,11 @@
 
 ## 下载与安装
 
-当前 Rust 版本为 **0.5.0**，通过 [GitHub Releases](https://github.com/lzt2323/clash/releases) 分发。`rust-v0.5.0` 尚待发布；下方在线命令在该发行版公开后可用，当前可使用本地发行包安装。运行时无需 Python、Rust、Cargo 或 Node.js。
+当前 Rust 版本为 **0.5.0**，通过 [GitHub Releases](https://github.com/lzt2323/clash/releases/tag/rust-v0.5.0) 分发。运行时无需 Python、Rust、Cargo 或 Node.js。
 
 | 系统 | 选择的安装包 | 运行条件 |
 | --- | --- | --- |
-| Linux x86_64 / amd64 | `clash-linux-rust-x86_64-unknown-linux-gnu.tar.gz` | glibc 与 libgcc 系统库；已在 Ubuntu 22.04 验证 |
+| Linux x86_64 / amd64 | [下载安装包](https://github.com/lzt2323/clash/releases/download/rust-v0.5.0/clash-linux-rust-x86_64-unknown-linux-gnu.tar.gz) · [SHA-256](https://github.com/lzt2323/clash/releases/download/rust-v0.5.0/clash-linux-rust-x86_64-unknown-linux-gnu.tar.gz.sha256) | glibc 与 libgcc 系统库；已在 Ubuntu 22.04 验证 |
 
 > [!TIP]
 > 一键安装会自动下载并校验对应架构的程序，默认安装到 `~/.local/share/clash-linux-rust`，无需 sudo。安装后，当前窗口按提示执行一次 `source`；以后新开终端直接输入 `clash` 即可。
