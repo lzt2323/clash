@@ -16,9 +16,9 @@ jobs:
       matrix:
         include:
           - runner: ubuntu-22.04
-            target: x86_64-unknown-linux-musl
+            target: x86_64-unknown-linux-gnu
           - runner: ubuntu-24.04-arm
-            target: aarch64-unknown-linux-musl
+            target: aarch64-unknown-linux-gnu
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 25
     defaults:
@@ -29,7 +29,7 @@ jobs:
       - name: Install build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y musl-tools python3
+          sudo apt-get install -y python3
           rustup toolchain install 1.99.0 --profile minimal --component rustfmt,clippy
           rustup default 1.99.0
           rustup target add '${{ matrix.target }}'
@@ -39,12 +39,7 @@ jobs:
           cargo fmt -- --check
           cargo clippy --locked --all-targets -- -D warnings
           cargo test --locked
-      - name: Build static manager
-        env:
-          CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER: musl-gcc
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: musl-gcc
-          CC_x86_64_unknown_linux_musl: musl-gcc
-          CC_aarch64_unknown_linux_musl: musl-gcc
+      - name: Build GNU manager
         run: cargo build --locked --release --target '${{ matrix.target }}'
       - name: Verify real core, distribution and terminal interaction
         env:

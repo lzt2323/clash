@@ -1,5 +1,21 @@
 # 当前进度
 
+## 2026-10-17 · GitHub Rust 发行已公开
+
+### 已完成与验证
+
+- GitHub 登录和仓库权限已确认；将已验证的 Rust 源码快照同步至 `lzt2323/clash` 的 main，公开提交 `d77c2f5`，保留远程旧历史，未强推。本地开发历史与历史发行仓库原有历史不同，使用独立干净 clone 同步源码。
+- 已按用户授权发布 [Clash Linux 0.5.0](https://github.com/lzt2323/clash/releases/tag/rust-v0.5.0)，tag 指向上述源码；不覆盖旧 Python release。4 个资产为安装器、GNU 包、独立校验和与 SHA256SUMS。GitHub 资产 digest、大小与本地产物一致。
+- 已在无 GitHub 认证的 HTTPS 下载中获取全部 4 个公开文件，与本地逐字节比较并核对 SHA-256，全部通过。GNU 包哈希保持 `be3f7fb32431fb2b0e73d1316a65673a4bf351757a1a32f9a53654dc8a2cb44a`。
+- 将从公开链接取得的文件复制到测试服务器的独立 HOME，通过离线安装器安装真实 Mihomo 与管理程序。版本为 Clash Linux 0.5.0 / Mihomo v1.19.29；新 Bash 在 /tmp 能直接找到 clash，全部许可证保留。测试目录为既有隔离工作区下 `public-oneclick-OxFdOHlx`，未改动用户原安装。
+- 服务器直连 GitHub 的在线尝试发生连接超时 / TLS 意外中断。因此公开下载在本机验证，服务器验证的是这些相同公开文件的离线安装，不宣称该服务器直连在线安装通过。
+
+### CI 与剩余事项
+
+- 首轮 Actions `39010627500` 的未发布 x86_64 musl 试验包在核心安装时 SIGSEGV；ARM 被 fail-fast 取消。已将检查目标改为当前发行使用的 GNU，并保留 ARM64 GNU 检查；YAML / Bash 语法和 Git diff 检查通过，等待 GitHub 运行结果。决策见 DECISIONS.md。
+- 当前公开安装包仍只支持已实测的 Linux x86_64 glibc。musl 问题待单独复现与修复；ARM 不能仅凭构建成功宣称已支持。
+- 下一步确认 GNU CI，并将 README 的待发布说明替换为已验证下载入口。
+
 ## 2026-10-17 · Rust 0.5.0 一键安装与常用 CLI
 
 工程实现与发行文件已完成验证；GitHub 公开入口尚未上线，等待本机登录 GitHub 后继续发布。
