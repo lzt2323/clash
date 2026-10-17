@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Clash Linux · 终端使用指南</title>
+<style>
+:root {
+  --paper:#f4f2eb;
+  --ink:#182b35;
+  --muted:#4d626b;
+  --line:#cbd3cf;
+  --accent:#23646b;
+  --terminal:#101b24;
+  --terminal-text:#f2f4ed;
+  --cyan:#7dd3d4;
+  --amber:#efbd70;
+  --terminal-muted:#afbdc6
+}
+* {
+  box-sizing:border-box
+}
+body {
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font:16px/1.65 system-ui,-apple-system,"Segoe UI","PingFang SC",sans-serif
+}
+a {
+  color:var(--accent);
+  text-underline-offset:5px
+}
+button,a {
+  touch-action:manipulation
+}
+button {
+  font:inherit;
+  cursor:pointer
+}
+button:disabled {
+  cursor:default;
+  opacity:.5
+}
+button:focus-visible,a:focus-visible,[tabindex]:focus-visible {
+  outline:3px solid var(--accent);
+  outline-offset:5px
+}
+button:focus-visible {
+  outline-offset:3px
+}
+button,a {
+  transition:color .15s,background-color .15s
+}
+main,header,footer {
+  max-width:1240px;
+  margin:auto;
+  padding:0 44px
+}
+.skip {
+  position:absolute;
+  left:20px;
+  top:-70px;
+  padding:12px;
+  background:white;
+  z-index:3
+}
+.skip:focus {
+  top:12px
+}
+header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding-top:24px;
+  padding-bottom:24px;
+  border-bottom:1px solid var(--line);
+  gap:24px
+}
+.brand {
+  display:flex;
+  align-items:center;
+  gap:14px;
+  color:var(--ink);
+  text-decoration:none;
+  font-size:19px;
+  font-weight:700;
+  letter-spacing:-.5px
+}
+.brand img {
+  width:52px;
+  height:52px
+}
+.brand small {
+  display:block;
+  font:11px/1.5 ui-monospace,"SFMono-Regular",Consolas,monospace;
+  color:var(--muted);
+  letter-spacing:1.3px
+}
+header nav {
+  display:flex;
+  gap:26px;
+  font-size:14px
+}
+header nav a {
+  text-decoration:none
+}
+.eyebrow {
+  font:12px ui-monospace,"SFMono-Regular",Consolas,monospace;
+  letter-spacing:1.7px;
+  color:var(--accent)
+}
+.hero {
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:40px;
+  padding:64px 0 44px;
+  align-items:end
+}
+h1 {
+  font-size:clamp(36px,4.4vw,57px);
+  line-height:1.2;
+  letter-spacing:-2px;
+  margin:18px 0 20px;
+  font-weight:650
+}
+h1 span {
+  display:block
+}
+h2 {
+  font-size:25px;
+  line-height:1.4;
+  letter-spacing:-.7px;
+  margin:0 0 12px
+}
+p {
+  margin:0 0 16px
+}
+.intro {
+  max-width:530px;
+  color:var(--muted);
+  font-size:17px
+}
+.hero-logo {
+  width: 152px;
+  height: 152px;
+  margin: 0 32px 12px 0;
+}
+.section-head {
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  gap:24px;
+  margin-bottom:20px
+}
+.section-head p {
+  font-size:14px;
+  color:var(--muted);
+  margin:0
+}
+.lessons {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap
+}
+.lessons button {
+  padding:10px 16px;
+  background:transparent;
+  border:1px solid var(--line);
+  border-radius:5px;
+  color:var(--muted);
+  min-height:44px
+}
+.lessons button[aria-pressed="true"] {
+  color:var(--paper);
+  background:var(--accent);
+  border-color:var(--accent)
+}
+.lesson {
+  display:grid;
+  grid-template-columns:290px minmax(0,1fr);
+  border:1px solid var(--line);
+  border-radius:10px;
+  overflow:hidden;
+  background:#fbfaf6
+}
+.steps {
+  padding:26px 20px
+}
+.steps ol {
+  margin:0;
+  padding:0;
+  list-style:none
+}
+.steps li+li {
+  margin-top:8px
+}
+.steps button {
+  border:0;
+  background:transparent;
+  text-align:left;
+  width:100%;
+  padding:12px;
+  display:flex;
+  gap:12px;
+  align-items:center;
+  color:var(--muted);
+  border-radius:5px;
+  min-height:48px;
+  font-size:14px
+}
+.steps button[aria-current="step"] {
+  background:#e5eeea;
+  color:var(--ink);
+  font-weight:600
+}
+.step-number {
+  font:12px ui-monospace,"SFMono-Regular",Consolas,monospace;
+  border:1px solid #b3c4c4;
+  display:grid;
+  place-items:center;
+  width:26px;
+  height:26px;
+  flex:none;
+  border-radius:50%
+}
+.steps button[aria-current="step"] .step-number {
+  background:var(--accent);
+  border-color:var(--accent);
+  color:white
+}
+.steps .aside-note {
+  font-size:12px;
+  margin:24px 12px 0;
+  color:var(--muted)
+}
+.demo {
+  background:var(--terminal);
+  color:var(--terminal-text);
+  min-width:0;
+  padding:20px 24px 22px
+}
+.terminal-chrome {
+  display:flex;
+  justify-content:space-between;
+  color:var(--terminal-muted);
+  font:12px ui-monospace,"SFMono-Regular",Consolas,monospace;
+  border-bottom:1px solid #34434d;
+  padding-bottom:16px
+}
+.terminal-chrome b {
+  color:var(--cyan);
+  font-weight:500
+}
+.terminal {
+  font:14px/1.8 ui-monospace,"SFMono-Regular",Consolas,"PingFang SC",monospace;
+  position:relative;
+  min-height:360px;
+  padding-top:16px;
+  outline-offset:8px!important
+}
+.terminal:focus-visible {
+  outline-color:var(--cyan)
+}
+.t-title {
+  font-weight:700;
+  letter-spacing:.4px
+}
+.t-status {
+  color:var(--terminal-muted);
+  font-size:12px;
+  margin:6px 0 16px;
+  border-bottom:1px solid #34434d;
+  padding-bottom:12px
+}
+.workbench {
+  display:grid;
+  grid-template-columns:130px minmax(0,1fr);
+  gap:22px;
+  min-height:230px
+}
+.t-nav {
+  border-right:1px solid #34434d;
+  padding-right:15px;
+  color:var(--terminal-muted);
+  font-size:13px
+}
+.t-nav div {
+  padding:4px 7px;
+  margin-bottom:3px
+}
+.t-nav .selected {
+  background:var(--cyan);
+  color:var(--terminal);
+  font-weight:700
+}
+.t-nav .core {
+  margin-top:22px;
+  color:var(--terminal-muted);
+  font-size:12px
+}
+.t-heading {
+  color:var(--cyan);
+  font-weight:700;
+  margin-bottom:8px
+}
+.t-dim {
+  color:var(--terminal-muted);
+  font-size:12px
+}
+.t-row {
+  padding:3px 8px;
+  margin:3px 0;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere
+}
+.t-row.selected {
+  background:#e1eeea;
+  color:var(--terminal);
+  font-weight:700
+}
+.t-detail {
+  margin:16px 0 0;
+  padding-top:12px;
+  border-top:1px solid #34434d;
+  color:var(--terminal-muted);
+  font-size:12px
+}
+.t-message {
+  color:var(--cyan);
+  font-size:12px;
+  padding:14px 0 0;
+  min-height:40px
+}
+.t-keys {
+  color:var(--terminal-muted);
+  font-size:11px;
+  border-top:1px solid #34434d;
+  padding-top:10px
+}
+.dialog {
+  position:absolute;
+  top:78px;
+  left:17%;
+  right:5%;
+  background:var(--terminal);
+  border:1px solid var(--cyan);
+  padding:20px;
+  box-shadow:0 0 0 7px var(--terminal)
+}
+.dialog strong {
+  color:var(--cyan)
+}
+.dialog label {
+  display:block;
+  margin-top:16px;
+  color:var(--terminal-muted);
+  font-size:12px
+}
+.dialog .input {
+  border-bottom:1px solid #6d8792;
+  padding:8px 0;
+  margin-bottom:16px
+}
+.cursor {
+  display:inline-block;
+  background:var(--cyan);
+  width:8px;
+  height:17px;
+  vertical-align:-3px
+}
+.shell {
+  padding:15px 0;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  line-height:2
+}
+.shell b {
+  color:var(--cyan);
+  font-weight:400
+}
+.shell .success {
+  color:var(--amber)
+}
+.caption {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:18px;
+  align-items:start;
+  margin-top:22px;
+  padding-top:20px;
+  border-top:1px solid #34434d
+}
+.caption h3 {
+  margin:0 0 5px;
+  font-size:16px;
+  font-weight:600
+}
+.caption p {
+  color:var(--terminal-muted);
+  font-size:13px;
+  margin:0;
+  min-height:44px
+}
+.keycaps {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  justify-content:flex-end;
+  max-width:160px
+}
+kbd {
+  font:12px ui-monospace,"SFMono-Regular",Consolas,monospace;
+  background:#243640;
+  color:var(--amber);
+  border:1px solid #52636c;
+  border-bottom-width:3px;
+  border-radius:4px;
+  padding:4px 8px
+}
+.player {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding-top:22px
+}
+.player .controls {
+  display:flex;
+  gap:8px
+}
+.player button {
+  border:1px solid #52636c;
+  background:transparent;
+  color:var(--terminal-text);
+  border-radius:4px;
+  min-height:44px;
+  padding:8px 12px;
+  font-size:13px
+}
+.player button.primary {
+  background:var(--cyan);
+  color:var(--terminal);
+  border-color:var(--cyan)
+}
+.progress {
+  color:var(--terminal-muted);
+  font:12px ui-monospace,"SFMono-Regular",Consolas,monospace
+}
+.topics {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:48px;
+  padding:56px 0;
+  border-bottom:1px solid var(--line)
+}
+.topics h2 {
+  font-size:21px
+}
+.topics p {
+  color:var(--muted);
+  font-size:14px
+}
+.command {
+  font:13px/1.8 ui-monospace,"SFMono-Regular",Consolas,monospace;
+  background:#e8eae3;
+  border-left:3px solid var(--accent);
+  padding:15px 18px;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere
+}
+.keyboard {
+  padding:44px 0
+}
+.keyboard dl {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:16px 28px
+}
+.keyboard dt {
+  font:14px ui-monospace,"SFMono-Regular",Consolas,monospace;
+  color:var(--accent)
+}
+.keyboard dd {
+  margin:6px 0 0;
+  color:var(--muted);
+  font-size:14px
+}
+.faq {
+  padding:20px 0 48px
+}
+.faq details {
+  border-bottom:1px solid var(--line);
+  padding:16px 0
+}
+.faq summary {
+  cursor:pointer;
+  font-weight:600
+}
+.faq details p {
+  margin:14px 0 0;
+  color:var(--muted);
+  font-size:14px;
+  max-width:800px
+}
+footer {
+  border-top:1px solid var(--line);
+  display:flex;
+  justify-content:space-between;
+  gap:24px;
+  padding-top:22px;
+  padding-bottom:30px;
+  color:var(--muted);
+  font-size:12px
+}
+noscript p {
+  padding:20px;
+  border:1px solid var(--line)
+}
+@media(max-width:980px) {
+  main,header,footer {
+    padding-left:24px;
+    padding-right:24px
+  }
+  .lesson {
+    grid-template-columns:225px minmax(0,1fr)
+  }
+  .steps {
+    padding:20px 10px
+  }
+  .demo {
+    padding:20px
+  }
+  .workbench {
+    grid-template-columns:105px minmax(0,1fr);
+    gap:16px
+  }
+  .t-nav {
+    padding-right:8px;
+    font-size:12px
+  }
+  .terminal {
+    font-size:13px
+  }
+  .dialog {
+    left:6%;
+    right:3%
+  }
+}
+@media(max-width:720px) {
+  main,header,footer {
+    padding-left:20px;
+    padding-right:20px
+  }
+  header nav a:not(:first-child) {
+    display:none
+  }
+  .hero {
+    padding-top:40px;
+    grid-template-columns:1fr;
+    gap:0
+  }
+  .hero-logo {
+    display:none
+  }
+  .section-head {
+    display:block
+  }
+  .section-head p {
+    margin-bottom:16px
+  }
+  .lessons button {
+    flex:1;
+    padding:10px
+  }
+  .lesson {
+    grid-template-columns:1fr
+  }
+  .steps {
+    padding:12px
+  }
+  .steps ol {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:4px
+  }
+  .steps li+li {
+    margin:0
+  }
+  .steps button {
+    padding:8px;
+    font-size:12px;
+    min-height:48px;
+    gap:8px
+  }
+  .steps .aside-note {
+    display:none
+  }
+  .step-number {
+    width:22px;
+    height:22px
+  }
+  .demo {
+    padding:16px 12px
+  }
+  .terminal {
+    min-height:405px
+  }
+  .t-status {
+    min-height:59px
+  }
+  .workbench {
+    grid-template-columns:1fr;
+    gap:10px;
+    min-height:250px
+  }
+  .t-nav {
+    display:flex;
+    flex-wrap:wrap;
+    gap:4px;
+    border:0;
+    border-bottom:1px solid #34434d;
+    padding:0 0 7px
+  }
+  .t-nav div {
+    font-size:11px;
+    margin:0;
+    padding:3px
+  }
+  .t-nav .core {
+    display:none
+  }
+  .t-detail {
+    margin-top:10px
+  }
+  .t-keys {
+    font-size:10px
+  }
+  .caption {
+    grid-template-columns:1fr
+  }
+  .keycaps {
+    justify-content:flex-start;
+    max-width:none
+  }
+  .dialog {
+    left:3%;
+    right:3%;
+    top:110px;
+    padding:16px
+  }
+  .player {
+    gap:10px
+  }
+  .player button {
+    padding:8px 10px;
+    font-size:12px
+  }
+  .topics {
+    grid-template-columns:1fr;
+    gap:30px;
+    padding:38px 0
+  }
+  .keyboard dl {
+    grid-template-columns:repeat(2,1fr)
+  }
+  footer {
+    flex-direction:column;
+    gap:8px
+  }
+  h1 {
+    letter-spacing:-1.5px
+  }
+}
+@media(prefers-reduced-motion:reduce) {
+  *,*:before,*:after {
+    transition:none!important;
+    animation:none!important;
+    scroll-behavior:auto!important
+  }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#first-run">跳到分步教程</a>
+<header><a class="brand" href="#top"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNDAiIGhlaWdodD0iMjQwIiB2aWV3Qm94PSIwIDAgMjQwIDI0MCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsbGVkYnk9InRpdGxlIGRlc2MiPgogIDx0aXRsZSBpZD0idGl0bGUiPkNsYXNoIExpbnV4IOWwj+eMqyBsb2dvPC90aXRsZT4KICA8ZGVzYyBpZD0iZGVzYyI+5rex6Imy5ZyG6KeS5bqV5p2/5LiK55qE5rWF6Z2S6Imy5bCP54yr77yM56uW6ICz44CB5ZyG55y85ZKM5b6u56yR44CCPC9kZXNjPgogIDxyZWN0IHg9IjQiIHk9IjQiIHdpZHRoPSIyMzIiIGhlaWdodD0iMjMyIiByeD0iNDgiIGZpbGw9IiMxMDFiMjQiLz4KICA8cGF0aCBkPSJNNTMgMTA0IDQ1IDU0UTQzIDQzIDU0IDQ4TDg4IDY4UTEyMCA1NyAxNTIgNjhMMTg2IDQ4UTE5NyA0MyAxOTUgNTRMMTg3IDEwNFEyMDEgMTIxIDE5NyAxNDRDMTkyIDE3NiAxNjQgMTk0IDEyMCAxOTRTNDggMTc2IDQzIDE0NFEzOSAxMjEgNTMgMTA0WiIgZmlsbD0iIzdkZDNkNCIvPgogIDxwYXRoIGQ9Im01OSA2NSA1IDMxIDIwLTE2WiIgZmlsbD0iI2YyZjRlZCIvPgogIDxwYXRoIGQ9Im0xODEgNjUtNSAzMS0yMC0xNloiIGZpbGw9IiNmMmY0ZWQiLz4KICA8ZyBmaWxsPSIjMTAxYjI0Ij4KICAgIDxlbGxpcHNlIGN4PSI4OCIgY3k9IjEyNiIgcng9IjciIHJ5PSIxMCIvPgogICAgPGVsbGlwc2UgY3g9IjE1MiIgY3k9IjEyNiIgcng9IjciIHJ5PSIxMCIvPgogICAgPHBhdGggZD0iTTExNCAxNDNRMTIwIDEzOSAxMjYgMTQzUTEyOCAxNDUgMTI1IDE0OEwxMjAgMTUyIDExNSAxNDhRMTEyIDE0NSAxMTQgMTQzWiIvPgogIDwvZz4KICA8ZyBmaWxsPSJub25lIiBzdHJva2U9IiMxMDFiMjQiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj4KICAgIDxwYXRoIGQ9Ik0xMjAgMTUydjVjMCA5LTEzIDEyLTE3IDNtMTctM2MwIDkgMTMgMTIgMTcgMyIvPgogICAgPHBhdGggZD0ibTU3IDEzOSAxNSAzbS0xNSAxMyAxNS0zbTExMS0xMy0xNSAzbTE1IDEzLTE1LTMiLz4KICA8L2c+Cjwvc3ZnPgo=" alt="Clash Linux 小猫 logo" width="52" height="52"><span>CLASH LINUX<small>YOUR TERMINAL. YOUR CONNECTION.</small></span></a><nav aria-label="指南导航"><a href="#first-run">开始使用</a><a href="#keys">常用按键</a><a href="#questions">常见问题</a></nav></header>
+<main id="top">
+<section class="hero" aria-labelledby="title"><div><div class="eyebrow">LINUX / SSH · TERMINAL GUIDE</div><h1 id="title">从订阅到代理，<span>在终端完成。</span></h1><p class="intro">添加订阅、选择节点，再为当前终端开启代理。跟着按键走一遍，熟悉 Clash Linux 的日常操作。</p></div><img class="hero-logo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNDAiIGhlaWdodD0iMjQwIiB2aWV3Qm94PSIwIDAgMjQwIDI0MCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsbGVkYnk9InRpdGxlIGRlc2MiPgogIDx0aXRsZSBpZD0idGl0bGUiPkNsYXNoIExpbnV4IOWwj+eMqyBsb2dvPC90aXRsZT4KICA8ZGVzYyBpZD0iZGVzYyI+5rex6Imy5ZyG6KeS5bqV5p2/5LiK55qE5rWF6Z2S6Imy5bCP54yr77yM56uW6ICz44CB5ZyG55y85ZKM5b6u56yR44CCPC9kZXNjPgogIDxyZWN0IHg9IjQiIHk9IjQiIHdpZHRoPSIyMzIiIGhlaWdodD0iMjMyIiByeD0iNDgiIGZpbGw9IiMxMDFiMjQiLz4KICA8cGF0aCBkPSJNNTMgMTA0IDQ1IDU0UTQzIDQzIDU0IDQ4TDg4IDY4UTEyMCA1NyAxNTIgNjhMMTg2IDQ4UTE5NyA0MyAxOTUgNTRMMTg3IDEwNFEyMDEgMTIxIDE5NyAxNDRDMTkyIDE3NiAxNjQgMTk0IDEyMCAxOTRTNDggMTc2IDQzIDE0NFEzOSAxMjEgNTMgMTA0WiIgZmlsbD0iIzdkZDNkNCIvPgogIDxwYXRoIGQ9Im01OSA2NSA1IDMxIDIwLTE2WiIgZmlsbD0iI2YyZjRlZCIvPgogIDxwYXRoIGQ9Im0xODEgNjUtNSAzMS0yMC0xNloiIGZpbGw9IiNmMmY0ZWQiLz4KICA8ZyBmaWxsPSIjMTAxYjI0Ij4KICAgIDxlbGxpcHNlIGN4PSI4OCIgY3k9IjEyNiIgcng9IjciIHJ5PSIxMCIvPgogICAgPGVsbGlwc2UgY3g9IjE1MiIgY3k9IjEyNiIgcng9IjciIHJ5PSIxMCIvPgogICAgPHBhdGggZD0iTTExNCAxNDNRMTIwIDEzOSAxMjYgMTQzUTEyOCAxNDUgMTI1IDE0OEwxMjAgMTUyIDExNSAxNDhRMTEyIDE0NSAxMTQgMTQzWiIvPgogIDwvZz4KICA8ZyBmaWxsPSJub25lIiBzdHJva2U9IiMxMDFiMjQiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj4KICAgIDxwYXRoIGQ9Ik0xMjAgMTUydjVjMCA5LTEzIDEyLTE3IDNtMTctM2MwIDkgMTMgMTIgMTcgMyIvPgogICAgPHBhdGggZD0ibTU3IDEzOSAxNSAzbS0xNSAxMyAxNS0zbTExMS0xMy0xNSAzbTE1IDEzLTE1LTMiLz4KICA8L2c+Cjwvc3ZnPgo=" alt="" width="152" height="152"></section>
+<section id="first-run" aria-labelledby="lesson-title"><div class="section-head"><div><h2 id="lesson-title">第一次使用</h2><p>安装完成后，从输入 <code>clash</code> 开始。</p></div><div class="lessons" aria-label="选择教程"><button type="button" data-lesson="start" aria-pressed="true">订阅与代理</button><button type="button" data-lesson="maintain" aria-pressed="false">自动更新与备份</button></div></div>
+<noscript><p>分步演示需要 JavaScript。添加订阅：输入 clash → 按 3 和 a → 填名称 → 填订阅地址 → 按 1 选择节点 → 按 q 退出 → 输入 clash on。自动更新可用 clash subscription auto-update 6h；备份可用 clash backup create。</p></noscript>
+<div class="lesson"><aside class="steps"><ol id="steps" aria-label="教程步骤"></ol><p class="aside-note">可点选任意步骤。<br>演示区域内用 ← / → 前后浏览。<br>按 Esc 暂停播放。</p></aside><div class="demo"><div class="terminal-chrome"><span><b>clash</b> — terminal</span><span>0.5.0</span></div><div id="terminal" class="terminal" tabindex="0" aria-label="终端操作分步演示，左右键切换步骤"></div><div class="caption"><div id="description" aria-live="polite" aria-atomic="true"><h3 id="step-title"></h3><p id="step-body"></p></div><div id="keycaps" class="keycaps" aria-label="本步按键"></div></div><div class="player"><div class="controls"><button id="prev" type="button">上一步</button><button id="next" type="button">下一步 →</button><button id="play" type="button" class="primary" aria-pressed="false">播放</button></div><span id="progress" class="progress"></span></div></div></div></section>
+<section class="topics"><div><h2>每次登录，按需开启</h2><p><code>clash on</code> 开启当前终端代理；<code>clash off</code> 关闭当前终端代理。新 SSH 会话需要单独开启。</p><pre class="command">clash on
+clash status
+clash off</pre></div><div><h2>先留一份配置，再继续</h2><p>更新前自动备份默认开启。也可以随时创建快照，恢复订阅、模式和节点选择。</p><pre class="command">clash backup create
+clash backup list
+clash backup restore 备份名称</pre></div></section>
+<section id="keys" class="keyboard" aria-labelledby="keys-title"><h2 id="keys-title">记住这几个按键</h2><dl><div><dt>1 / 2 / 3 / 4 / 5</dt><dd>节点、模式、订阅、诊断、设置与备份</dd></div><div><dt>← → / Tab</dt><dd>在任务导航与内容区域切换</dd></div><div><dt>↑ ↓ + Enter</dt><dd>浏览项目并执行选中的操作</dd></div><div><dt>/ / t</dt><dd>搜索节点 / 测试全部节点延迟</dd></div><div><dt>a / u / e / d</dt><dd>订阅页添加、更新、编辑、删除</dd></div><div><dt>Esc / q</dt><dd>取消并返回 / 安全退出工作台</dd></div></dl></section>
+<section id="questions" class="faq" aria-labelledby="faq-title"><h2 id="faq-title">常见问题</h2><details><summary>添加订阅后，终端为什么还没有走代理？</summary><p>配置与终端代理是两步操作。按 q 退出工作台，再执行 clash on；用 clash status 检查“核心：运行中”和“当前终端代理：已开启”。</p></details><details><summary>关闭代理和停止核心有什么区别？</summary><p>clash off 只清除当前终端的代理变量，其他终端可继续使用核心。clash stop 会停止核心，影响所有正在使用它的终端。</p></details><details><summary>自动更新需要一直开着终端吗？</summary><p>不需要。开启后由系统 cron 检查是否到期。服务器需要已有 crontab 命令和运行中的 cron 服务。自动更新默认关闭，可在第 5 页设置间隔。</p></details><details><summary>只剩一个订阅时可以删除吗？</summary><p>可以。在订阅页按 d，确认后删除。最后一个订阅删除时会停止核心，之后仍能重新添加；当前终端若已开代理，请执行 clash off。</p></details></section>
+</main><footer><span>CLASH LINUX · Linux / SSH 终端代理管理</span><span>离线指南 · Clash Linux 0.5.0</span></footer>
+<script>
+'use strict';
+const lessons={
+ start:[
+  {title:'打开工作台',body:'在完成 shell 集成的终端中输入 clash，打开五个任务页面。',keys:['clash','Enter'],view:'empty',page:0},
+  {title:'添加订阅名称',body:'按 3 进入订阅页，再按 a。输入便于辨认的名称，例如“日常订阅”。',keys:['3','a'],view:'name',page:2},
+  {title:'粘贴订阅地址',body:'名称填好后按 Enter，粘贴服务商提供的 Clash / Mihomo YAML 链接；输入内容始终隐藏。',keys:['Enter','粘贴地址'],view:'url',page:2},
+  {title:'保存第一个订阅',body:'按 Enter 保存。首个订阅自动使用，后续添加的订阅不会自动切换。',keys:['Enter'],view:'subscription',page:2},
+  {title:'选择节点',body:'按 1 回到节点页，用上下键选择，再按 Enter。也可保留“自动选择”。',keys:['1','↓','Enter'],view:'nodes',page:0},
+  {title:'开启当前终端代理',body:'按 q 返回终端，执行 clash on，再用 clash status 确认核心运行、当前终端代理已开启。',keys:['q','clash on'],view:'shell',page:0}
+ ],
+ maintain:[
+  {title:'打开设置与备份',body:'在工作台按 5。自动更新默认关闭，先选择“订阅自动更新”。',keys:['5'],view:'settings',page:4},
+  {title:'填写更新间隔',body:'按 Enter，输入 6h 表示每六小时更新。也支持 30m、1d；输入 off 可关闭。',keys:['Enter','6h'],view:'interval',page:4},
+  {title:'保存定时更新',body:'再次按 Enter 保存。系统 cron 每五分钟检查是否到期，终端关闭后仍可更新。',keys:['Enter'],view:'scheduled',page:4},
+  {title:'创建一份配置备份',body:'向下选择“立即备份配置”并按 Enter。生成的快照出现在下方，选择它可确认恢复。',keys:['↓','↓','Enter'],view:'backup',page:4}
+ ]
+};
+const $=id=>document.getElementById(id);
+const escapeHTML=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let lesson='start',index=0,timer=null;
+const motion=window.matchMedia('(prefers-reduced-motion: reduce)');
+function stop(){clearInterval(timer);timer=null;$('play').textContent='播放';$('play').setAttribute('aria-pressed','false');}
+function step(delta){index=Math.min(Math.max(index+delta,0),lessons[lesson].length-1);render();}
+function rows(items,selected=0){return items.map((s,i)=>`<div class="t-row ${i===selected?'selected':''}">${i===selected?'&gt;':'&nbsp;'} ${escapeHTML(s)}</div>`).join('');}
+function terminalHTML(s){
+ if(s.view==='shell')return '<div class="shell"><b>$</b> clash on\n核心已启动。\n\n<b>$</b> clash status\n<span class="success">核心：运行中\n当前终端代理：已开启</span>\n订阅：日常订阅\n模式：rule / 节点：香港 01\n\n<b>$</b> <span class="cursor"></span></div>';
+ const installed=['subscription','nodes','settings','interval','scheduled','backup'].includes(s.view);
+ const names=['节点','模式','订阅','诊断','设置与备份'];
+ let content='',dialog='',notice='状态已读取。选择项目后按 Enter 执行。';
+ if(s.page===0){content=installed?'<div class="t-heading">节点</div><div class="t-dim">共 4 项</div>'+rows(['  自动选择','* 香港 01','  东京 02','  新加坡 03'],1)+'<div class="t-detail">所选项目 · 香港 01<br>Enter 使用　/ 搜索　t 全部测速</div>':'<div class="t-heading">节点</div><div class="t-dim">共 0 项</div><p style="margin-top:24px">尚未添加订阅，按 3 再按 a 添加。</p>';}
+ if(s.page===2){content='<div class="t-heading">订阅</div><div class="t-dim">'+(installed?'共 1 项':'共 0 项')+'</div>'+(installed?rows(['* 日常订阅'])+'<div class="t-detail">日常订阅 · 3 个节点<br>Enter 使用　u 更新　e 编辑　d 删除</div>':'<p style="margin-top:24px">尚未添加订阅，按 3 再按 a 添加。</p>');if(installed)notice='订阅已添加，已自动使用。';}
+ if(s.page===4){const enabled=['scheduled','backup'].includes(s.view);content='<div class="t-heading">设置与备份</div>'+rows(['订阅自动更新：'+(enabled?'每 360 分钟':'关闭'),'立即更新全部订阅','立即备份配置','更新前自动备份：开启','备份保留份数：10',...(s.view==='backup'?['恢复：backup-…tar.gz']:[])],s.view==='backup'?2:0)+'<div class="t-detail">间隔：30m / 6h / 1d，off 关闭<br>Enter 设置；选择备份后可确认恢复</div>';if(enabled)notice=s.view==='backup'?'配置已备份。可在列表中选择恢复。':'自动更新已开启：每 360 分钟。';}
+ if(['name','url','interval'].includes(s.view)){const label=s.view==='name'?'订阅名称':s.view==='url'?'订阅地址（隐藏输入）':'输入 30m / 6h / 1d，off 关闭';const value=s.view==='name'?'日常订阅':s.view==='url'?'************************':'6h';dialog=`<div class="dialog"><strong>${s.view==='interval'?'自动更新间隔':'添加订阅'}</strong><label>${label}</label><div class="input">${value}<span class="cursor"></span></div><div class="t-dim">Enter 继续　Esc 取消</div></div>`;}
+ return `<div class="t-title">CLASH · 终端工作台</div><div class="t-status">核心：未运行或接口异常　当前终端代理：未开启<br>订阅：${installed?'日常订阅':'未添加'}　模式：规则　节点：${s.view==='nodes'?'香港 01':'自动选择'}</div><div class="workbench"><div class="t-nav">${names.map((n,i)=>`<div class="${i===s.page?'selected':''}">${i+1} ${n}</div>`).join('')}<div class="core">核心操作<br>s 启动<br>x 停止</div></div><div>${content}</div></div><div class="t-message">${notice}</div><div class="t-keys">1–5 任务　s 启动　x 停止　Esc 返回　? 帮助　q 退出</div>${dialog}`;
+}
+function render() {
+  const list = lessons[lesson];
+  const current = list[index];
+  const focusedStep = document.activeElement?.closest('#steps button')?.dataset.step;
+  const buttons = list.map((item, stepIndex) => {
+    const entry = document.createElement('li');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.step = String(stepIndex);
+    button.innerHTML = `<span class="step-number">${String(stepIndex + 1).padStart(2, '0')}</span><span>${escapeHTML(item.title)}</span>`;
+    if (stepIndex === index) button.setAttribute('aria-current', 'step');
+    button.addEventListener('click', () => {
+      stop();
+      index = stepIndex;
+      render();
+    });
+    entry.append(button);
+    return entry;
+  });
+  $('steps').replaceChildren(...buttons);
+  $('terminal').innerHTML = terminalHTML(current);
+  $('step-title').textContent = current.title;
+  $('step-body').textContent = current.body;
+  $('keycaps').replaceChildren(...current.keys.map(key => {
+    const element = document.createElement('kbd');
+    element.textContent = key;
+    return element;
+  }));
+  $('progress').textContent = `${String(index + 1).padStart(2, '0')} / ${String(list.length).padStart(2, '0')}`;
+  $('prev').disabled = index === 0;
+  $('next').disabled = index === list.length - 1;
+  document.querySelectorAll('[data-lesson]').forEach(button => {
+    button.setAttribute('aria-pressed', String(button.dataset.lesson === lesson));
+  });
+  if (focusedStep !== undefined) {
+    $('steps').querySelector(`[data-step="${focusedStep}"]`)?.focus();
+  }
+}
+
+$('prev').addEventListener('click', () => {
+  stop();
+  step(-1);
+});
+$('next').addEventListener('click', () => {
+  stop();
+  step(1);
+});
+$('play').addEventListener('click', () => {
+  if (timer) {
+    stop();
+    return;
+  }
+  if (motion.matches) return;
+  if (index === lessons[lesson].length - 1) {
+    index = 0;
+    render();
+  }
+  $('play').textContent = '暂停';
+  $('play').setAttribute('aria-pressed', 'true');
+  timer = setInterval(() => {
+    if (index === lessons[lesson].length - 1) {
+      stop();
+      return;
+    }
+    step(1);
+  }, 4800);
+});
+$('terminal').addEventListener('keydown', event => {
+  if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+    event.preventDefault();
+    stop();
+    step(event.key === 'ArrowRight' ? 1 : -1);
+  }
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') stop();
+});
+document.querySelectorAll('[data-lesson]').forEach(button => {
+  button.addEventListener('click', () => {
+    stop();
+    lesson = button.dataset.lesson;
+    index = 0;
+    render();
+  });
+});
+document.querySelector('.lesson').addEventListener('focusin', event => {
+  if (event.target !== $('play')) stop();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stop();
+});
+function syncMotion() {
+  if (motion.matches) stop();
+  $('play').disabled = motion.matches;
+  $('play').title = motion.matches ? '已按系统的减少动态效果设置关闭播放' : '播放本教程';
+}
+motion.addEventListener('change', syncMotion);
+render();
+syncMotion();
+
+</script>
+</body>
+</html>

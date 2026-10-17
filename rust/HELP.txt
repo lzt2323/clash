@@ -1,0 +1,40 @@
+Clash Linux · 终端代理管理
+用法：clash [命令]
+
+  clash                   打开分栏工作台：节点、模式、订阅、诊断、设置与备份
+  clash menu --plain       使用纯文本菜单
+  clash on / off           开启 / 关闭当前终端代理（需 shell 集成）
+  clash start / stop       启动 / 停止核心
+  clash restart            重启核心
+  clash status             查看当前终端和核心状态
+  clash doctor             检查连接
+  clash subscription auto-update 6h   每 6 小时更新订阅（系统 cron）
+  clash subscription auto-update off 关闭自动更新
+  clash subscription update          立即更新全部订阅
+  clash subscription status          查看更新 / 备份设置和最近结果
+  clash backup create / list         备份配置 / 列出备份
+  clash backup restore NAME          恢复备份（先备份当前配置）
+  clash backup auto on|off           更新前自动备份
+  clash backup keep COUNT            备份保留份数，默认 10
+  clash shell-init         安装当前用户的 shell 集成
+  clash shell-uninstall    移除 shell 集成
+  clash shell              在启用代理的新 shell 中工作
+  clash install / update   安装固定版本 Mihomo，校验并复用相同版本
+  clash version            查看 Mihomo 版本
+  clash app-version        查看管理程序版本
+  clash upgrade --check    检查管理程序更新
+  clash upgrade --archive FILE --sha256 HASH  离线升级，复用现有核心
+  clash rollback           回滚到上一管理程序版本
+  clash recover            恢复中断升级
+  clash uninstall [--purge] 卸载，默认保留订阅和配置
+  clash logs [--follow]    查看日志
+
+工作台：← → / Tab 切换区域；导航区 ↑ ↓ 即时预览，Enter 进入内容。
+1-5 切换任务，第 5 页为设置与备份；/ 搜索；t 全部测速；a 添加；u 更新；e 改地址；d 删除。
+s 启动；x 停止；r 刷新；诊断页 R 重启；Esc 取消并返回；q 退出。
+停止 / 重启 / 删除有确认提示，默认取消；订阅链接输入始终隐藏。
+
+当前 shell 的代理变量只能由 shell 修改，首次运行 clash shell-init 后按提示 source。
+也可执行 eval "$(./clash on)" / eval "$(./clash off)"。
+每个 SSH 会话单独开启代理；clash off 保持核心运行，clash stop 影响所有会话。
+订阅仅支持 Clash/Mihomo provider YAML；首个订阅自动使用，后续添加不切换。

@@ -1,21 +1,18 @@
-.env
-.env.bak
-*.bak
+# Local configuration, subscription data and core binaries
+/.env
+/.env.bak
+/conf/
+/runtime/
+/bin/
+/logs/
+/log/
 
-conf/*
-!conf/Country.mmdb
-
-logs/*
-log/*
-
-temp/*
-!temp/templete_config.yaml
-!temp/mihomo_config.template.yaml
-
-my-clash.yaml
-runtime/*
-/bin/mihomo
-
-/python/
+# Reproducible build and packaging outputs
+/target/
+/dist/
+/rust/target/
+/rust/dist/
 __pycache__/
 *.pyc
+*.bak
+.DS_Store

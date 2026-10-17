@@ -1,0 +1,83 @@
+name: Prepare Rust release draft
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing Rust tag, for example rust-v0.5.0 (never created by this workflow)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+      - name: Install Rust build tools
+        run: |
+          rustup toolchain install 1.99.0 --profile minimal --component rustfmt,clippy
+          rustup default 1.99.0
+      - name: Verify tag and installer agree with package version
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          version=$(cargo metadata --no-deps --format-version 1 | python3 -c 'import json,sys; print(json.load(sys.stdin)["packages"][0]["version"])')
+          test "$RELEASE_TAG" = "rust-v$version"
+          grep -Fx "RELEASE_TAG=$RELEASE_TAG" ../install.sh
+          bash -n ../install.sh
+      - name: Verify Rust source and build GNU manager
+        run: |
+          cargo fmt -- --check
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo test --locked
+          cargo build --release --locked
+      - name: Verify core, distribution, bootstrap and terminal interaction
+        env:
+          CLASH_RUST_BINARY: ${{ github.workspace }}/rust/target/release/clash
+        run: |
+          mkdir -p /tmp/clash-release-core
+          "$CLASH_RUST_BINARY" --root /tmp/clash-release-core install
+          MIHOMO_BINARY=/tmp/clash-release-core/bin/mihomo python3 -B tests/integration.py
+          python3 -B tests/pty_test.py
+      - name: Package release assets
+        run: |
+          python3 package.py --binary target/release/clash --target x86_64-unknown-linux-gnu
+          cp ../install.sh dist/install.sh
+          cd dist
+          sha256sum install.sh *.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rust-release
+          path: rust/dist/*
+          if-no-files-found: error
+
+  draft:
+    needs: package
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: rust-release
+          path: release
+      - name: Create draft for the existing tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          printf '%s\n' 'Clash Linux Rust: Linux x86_64 glibc build.' \
+            'Includes the one-command installer, archive checksum and original dependency licenses.' \
+            'This draft must be reviewed and published explicitly.' > notes.md
+          gh release create "$RELEASE_TAG" release/* --verify-tag --draft --latest=false \
+            --title "Clash Linux $RELEASE_TAG" --notes-file notes.md

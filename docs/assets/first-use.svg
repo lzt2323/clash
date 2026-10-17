@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="300" viewBox="0 0 1080 300" role="img" aria-labelledby="title desc"><title id="title">添加订阅并开启代理</title><desc id="desc">第一步按3和a添加订阅，第二步填名称与隐藏地址后按Enter，第三步选节点、退出并运行clash on。</desc><rect width="1080" height="300" rx="12" fill="#101b24"/><g font-family="DejaVu Sans Mono,Consolas,PingFang SC,monospace">
+<text x="30" y="48" font-size="16" fill="#7dd3d4" font-weight="400">01</text>
+<text x="30" y="88" font-size="26" fill="#f2f4ed" font-weight="700">添加订阅</text>
+<text x="30" y="148" font-size="22" fill="#efbd70" font-weight="400">3  →  a</text>
+<text x="30" y="209" font-size="18" fill="#afbdc6" font-weight="400">进入订阅页</text>
+<text x="30" y="241" font-size="18" fill="#afbdc6" font-weight="400">打开添加表单</text>
+<path d="M370 32V268" stroke="#34434d"/>
+<text x="387" y="48" font-size="16" fill="#7dd3d4" font-weight="400">02</text>
+<text x="387" y="88" font-size="26" fill="#f2f4ed" font-weight="700">保存订阅</text>
+<text x="387" y="148" font-size="22" fill="#efbd70" font-weight="400">名称 ↵  地址 ↵</text>
+<text x="387" y="209" font-size="18" fill="#afbdc6" font-weight="400">地址输入会隐藏</text>
+<text x="387" y="241" font-size="18" fill="#afbdc6" font-weight="400">首个订阅自动使用</text>
+<path d="M727 32V268" stroke="#34434d"/>
+<text x="744" y="48" font-size="16" fill="#7dd3d4" font-weight="400">03</text>
+<text x="744" y="88" font-size="26" fill="#f2f4ed" font-weight="700">开启代理</text>
+<text x="744" y="148" font-size="22" fill="#efbd70" font-weight="400">q  →  clash on</text>
+<text x="744" y="209" font-size="18" fill="#afbdc6" font-weight="400">可先按 1 选择节点</text>
+<text x="744" y="241" font-size="18" fill="#afbdc6" font-weight="400">用 clash status 确认</text>
+</g></svg>

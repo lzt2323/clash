@@ -1,84 +1,118 @@
-# Clash Linux
+<p align="center">
+  <img src="docs/assets/logo.svg" width="144" height="144" alt="Clash Linux 小猫 logo">
+</p>
 
-在 Linux / SSH 终端里使用 Clash。**命令行快速开关代理，终端菜单管理订阅和节点。**
+<h1 align="center">Clash Linux</h1>
 
-- 保存多个订阅，随时切换其中一个使用。
-- 选择节点、全部测速，切换规则 / 全局 / 直连模式。
-- 自带 Mihomo 和独立 Python，无需手动安装 Python，不影响系统环境。
+<p align="center">在 Linux / SSH 终端管理订阅、节点与代理。</p>
 
-## 安装
+<p align="center">
+  <a href="#install">下载与安装</a> · <a href="#start">开始使用</a> · <a href="#help">常见问题</a>
+</p>
 
-支持 Linux glibc（x86_64 / ARM64），暂不支持 Alpine。需要 Bash、curl、tar、gzip、sha256sum。
+![Clash Linux 工作台：多订阅、节点选择、模式、诊断与设置](docs/assets/workbench.svg)
 
-```bash
-curl -fsSL https://download.getplus.dpdns.org/install.sh \
-  -o /tmp/clash-install.sh && bash /tmp/clash-install.sh
-```
+- **管理订阅**：保存多个订阅，更新内容，按需切换。
+- **选择节点**：搜索节点、测试延迟，切换规则 / 全局 / 直连模式。
+- **开关代理**：在任意目录输入 `clash` 打开工作台，用 `clash on` 开启当前终端代理。
+- **查看状态**：检查核心和当前终端代理，查看连接诊断与实时日志。
 
-安装成功后，在当前窗口加载并打开菜单：
+<a id="install"></a>
 
-```bash
-source ~/.local/share/clash-linux/env.sh
-clash
-```
+## 下载与安装
 
-`source` 只需在安装后的当前窗口执行一次，以后新开 SSH 会话可直接使用 `clash`。
+当前 Rust 版本为 **0.5.0**，通过 [GitHub Releases](https://github.com/lzt2323/clash/releases) 分发。`rust-v0.5.0` 尚待发布；下方在线命令在该发行版公开后可用，当前可使用本地发行包安装。运行时无需 Python、Rust、Cargo 或 Node.js。
 
-默认安装到 `~/.local/share/clash-linux`。安装包优先从下载服务器获取，失败时自动尝试 GitHub；主站无法访问时，可从 [GitHub Release](https://github.com/lzt2323/clash/releases/latest) 下载 `install.sh` 后运行。
+| 系统 | 选择的安装包 | 运行条件 |
+| --- | --- | --- |
+| Linux x86_64 / amd64 | `clash-linux-rust-x86_64-unknown-linux-gnu.tar.gz` | glibc 与 libgcc 系统库；已在 Ubuntu 22.04 验证 |
 
-当前发行版为 **v0.2.0**，支持保留配置和订阅升级、失败恢复及手动回滚。
+> [!TIP]
+> 一键安装会自动下载并校验对应架构的程序，默认安装到 `~/.local/share/clash-linux-rust`，无需 sudo。安装后，当前窗口按提示执行一次 `source`；以后新开终端直接输入 `clash` 即可。
 
-## 升级已有安装
-
-已经安装 v0.1.0 / v0.1.1 的用户，先退出 Clash 菜单，用新安装器完成首次升级：
-
-```bash
-curl -fsSL https://download.getplus.dpdns.org/install.sh \
-  -o /tmp/clash-install.sh && bash /tmp/clash-install.sh --upgrade
-```
-
-自定义安装目录需追加 `--prefix /你的安装目录`。升级期间正在运行的核心会短暂重启；原本停止的核心保持停止。首次升级之后使用：
+### 一键安装
 
 ```bash
-clash app-version       # 查看工作台版本
-clash upgrade --check   # 只检查更新
-clash upgrade           # 更新整个程序，保留订阅、节点选择和配置
-clash rollback          # 恢复上一版本，保留当前兼容数据
+curl -fsSL https://github.com/lzt2323/clash/releases/download/rust-v0.5.0/install.sh | bash
 ```
 
-`clash update` / `clash version` 仍只针对 Mihomo 核心。旧源码目录没有安装标记，升级器会拒绝覆盖。离线升级、故障恢复和备份说明见 [升级指南](UPGRADE.md)。
+再次运行会保留订阅和核心，调用 Rust 升级流程。自定义目录及离线安装见[安装说明](rust/README.md#一键安装)。
 
-## 第一次使用
+### 手动安装
 
-1. 运行 `clash`，按 `3` 进入订阅管理，再按 `a` 添加自己的订阅链接。
-2. 按 `1` 选择节点，回车确认；需要切换模式时按 `2`。
-3. 按 `q` 退出菜单，执行 `clash on`，即可让当前终端的 curl、Git 等命令使用代理。
+先使用随包提供的 `.sha256` 文件校验压缩包，再解压：
 
-菜单中用 **← → / Tab** 切换区域；在左侧按 **↑ ↓** 选择任务，右侧会立即显示对应内容，按 **→ / Tab / Enter** 进入内容区后，再用 **↑ ↓** 浏览、**Enter** 执行。`t` 测速当前订阅的全部节点，`?` 查看帮助。
+```bash
+sha256sum -c clash-linux-rust-x86_64-unknown-linux-gnu.tar.gz.sha256
+mkdir -p clash-linux-package
+tar -xzf clash-linux-rust-x86_64-unknown-linux-gnu.tar.gz -C clash-linux-package
+cd clash-linux-package
+./clash self-install --prefix "$HOME/.local/share/clash-linux-rust"
+source "$HOME/.local/share/clash-linux-rust/env.sh"
+```
 
-## 常用命令
+首次安装会下载并校验 Mihomo 核心；相同版本可复用，之后升级管理程序无需再次下载核心。已有核心、离线安装及旧数据迁移见[安装说明](rust/README.md#安装与运行)。
 
-| 命令 | 作用 |
+<a id="start"></a>
+
+## 开始使用
+
+### 添加订阅并开启代理
+
+![三步完成首次使用：添加订阅、保存名称和地址、开启终端代理](docs/assets/first-use.svg)
+
+1. 输入 `clash` 打开工作台，按 **3** 进入订阅页，再按 **a** 添加。
+2. 填写订阅名称，按 **Enter**；粘贴 Clash / Mihomo YAML 订阅链接，再按 **Enter**。地址输入会隐藏，首个订阅自动使用。
+3. 按 **1** 进入节点页，使用 **↑ / ↓** 选择节点，按 **Enter** 应用；也可以保留“自动选择”。
+4. 按 **q** 返回终端，执行 `clash on`，再执行 `clash status`。
+
+看到“核心：运行中”和“当前终端代理：已开启”，即完成首次配置。新开的 Bash / Zsh 终端可在任意目录输入 `clash`；每个 SSH 会话需要单独执行 `clash on`。
+
+[打开 HTML 分步指南](docs/guide.html)：在本地浏览器打开此文件，可逐步查看首次配置的按键和界面变化。
+
+### 常用 CLI 命令
+
+| 命令 | 用途 |
 | --- | --- |
-| `clash` | 打开终端菜单 |
-| `clash on` | 启动核心并开启当前终端代理 |
+| `clash` | 打开终端工作台 |
+| `clash on` | 启动核心，并开启当前终端代理 |
 | `clash off` | 关闭当前终端代理，核心继续运行 |
-| `clash start` | 启动核心 |
+| `clash status` | 查看核心、代理、订阅和节点状态 |
+| `clash start` | 只启动核心，不修改当前终端代理 |
 | `clash stop` | 停止核心，并清除当前终端代理 |
 | `clash restart` | 重启核心 |
-| `clash status` | 查看状态 |
+| `clash doctor` | 检查连接并查看诊断结果 |
+| `clash logs --follow` | 持续查看核心日志，按 Ctrl+C 结束查看 |
+| `clash menu --plain` | 使用数字文本菜单 |
+| `clash app-version` | 查看管理程序版本 |
+| `clash help` | 查看完整命令帮助 |
 
-**每个新 SSH 会话需要单独执行 `clash on` 开启代理。** 本工具通过终端代理变量工作，不会自动接管所有系统流量。
+`clash on / off` 只影响当前终端；停止或重启核心会影响所有使用该核心的终端。订阅自动更新、配置备份等进阶操作见[完整使用说明](rust/README.md)。
 
-## 卸载
+<a id="help"></a>
 
-```bash
-clash uninstall          # 卸载程序，保留订阅与配置
-clash uninstall --purge  # 同时删除订阅与配置
-```
+## 常见问题
 
-保留数据后，在原目录安装相同版本即可恢复使用。
+**关闭代理和停止核心有什么区别？**
 
----
+`clash off` 清除当前终端的代理变量，核心继续运行；`clash stop` 停止核心，会影响其他正在使用它的终端。
 
-[下载](https://download.getplus.dpdns.org) · [反馈问题](https://github.com/lzt2323/clash/issues) · [GPL-3.0 许可证](LICENSE)
+**为什么添加订阅后，终端仍没有使用代理？**
+
+添加订阅、选择节点只会保存配置。按 `q` 返回终端后执行 `clash on`；如果提示找不到命令，先按安装输出执行一次 `source`。
+
+**只剩一个订阅时能删除吗？**
+
+可以。在订阅页按 `d` 并确认。最后一项删除时会停止核心，之后可重新添加；当前终端若已开代理，请执行 `clash off`。
+
+**如何升级并保留配置？**
+
+Rust 安装可使用 `clash upgrade --archive FILE --sha256 HASH` 离线升级，保留订阅、配置与核心。旧 Python 安装需显式导入数据，不能直接覆盖。[升级与回滚说明](rust/README.md#管理程序升级)。
+
+**支持 macOS、Windows、ARM64 或 Alpine 吗？**
+
+当前提供并验证的是 Linux x86_64 glibc 版本。其他平台尚未提供经过实机验证的安装包。
+
+更多操作运行 `clash help`，或阅读[完整使用说明](rust/README.md)。参与开发请看[开发与验证](rust/README.md#开发与验证)。
+
+许可证：[GPL-3.0-only](LICENSE)。代理核心使用 [Mihomo](https://github.com/MetaCubeX/mihomo)，独立下载。
