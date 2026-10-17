@@ -1,6 +1,6 @@
 # Rust 发行
 
-默认 GitHub 发行仓库：[lzt2323/clash](https://github.com/lzt2323/clash)。Rust 版本使用 `rust-vX.Y.Z` 独立 tag，不覆盖旧 Python 发行文件。
+默认 GitHub 发行仓库：[lzt2323/clash](https://github.com/lzt2323/clash)。Rust 版本使用 `rust-vX.Y.Z` 独立 tag。按用户要求，Releases 只保留最新公开版本，并将其设置为 Latest；历史源码 tag 与 Git 提交保留。
 
 ## 准备与检查
 
@@ -21,7 +21,7 @@ SHA256SUMS
 
 维护者明确批准推送和发行后，将已验证源码同步到仓库，并手动创建对应 Rust tag。进入 Actions → **Prepare Rust release draft**，输入已存在的 tag。Workflow 会核对版本、构建、测试和打包，然后使用 `--verify-tag --draft --latest=false` 创建草稿。它不会自动创建 tag，也不会直接公开发布。
 
-检查草稿文件和版本后，由维护者发布。此后验证真实下载及 README 的一键命令，再移除 README 中“尚待发布”的说明。
+检查草稿文件和版本后，由维护者发布并设置为 Latest。确认新发行文件完整后，按授权清理旧 Release。此后验证真实下载及 README 的一键命令，再移除 README 中“尚待发布”的说明。
 
 当前已公开的 [0.5.0 发行版](https://github.com/lzt2323/clash/releases/tag/rust-v0.5.0) 安装入口：
 
