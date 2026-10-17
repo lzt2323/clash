@@ -54,7 +54,7 @@ README 依据用户提供的 `README_GUIDELINE.md`，以获取已编译程序、
 
 接受薄 Bash 引导器：只做平台检查、HTTPS 下载与 SHA-256 校验，然后调用现有 Rust 安装 / 升级。较简单的直接 tar 解压方案会重复路径校验逻辑；新增 `self-install --archive / --sha256` 复用原生解包，更容易保持许可证与数据保护规则一致。保留原 `self-install` 用法。新 CLI 能力按 SemVer 升为 0.5.0，未增加 Rust 依赖。
 
-新发行 workflow 为手动触发，要求已有 tag、执行检查后只创建 GitHub Release 草稿，不自动创建 tag 或公开发布。当前 GitHub CLI 未登录，公开 URL 在实际发布前明确标为待启用，不宣称线上安装已验证。
+新发行 workflow 为手动触发，要求已有 tag、执行检查后只创建 GitHub Release 草稿，不自动创建 tag 或公开发布。准备阶段 GitHub CLI 未登录，公开 URL 在实际发布前明确标为待启用；随后经用户完成登录授权公开发行，真实下载与在线安装证据见 STATUS.md。
 
 ## 2026-10-17 · CI 对齐 GNU 发行目标
 

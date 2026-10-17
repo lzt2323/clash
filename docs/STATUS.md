@@ -12,13 +12,15 @@
 
 ### CI 与剩余事项
 
-- 首轮 Actions `39010627500` 的未发布 x86_64 musl 试验包在核心安装时 SIGSEGV；ARM 被 fail-fast 取消。已将检查目标改为当前发行使用的 GNU，并保留 ARM64 GNU 检查；YAML / Bash 语法和 Git diff 检查通过，等待 GitHub 运行结果。决策见 DECISIONS.md。
+- 首轮 Actions `39010627500` 的未发布 x86_64 musl 试验包在核心安装时 SIGSEGV；ARM 被 fail-fast 取消。已将检查目标改为当前发行使用的 GNU，并保留 ARM64 GNU 检查。后续 [GNU CI 39010856006](https://github.com/lzt2323/clash/actions/runs/39010856006) 两组全部成功：x86_64 为 24 单元 + 27 集成 + 14 PTY，ARM64 为 24 单元 + 25 集成 + 14 PTY。CI 未设置可选离线核心归档，因此各跳过 1 项；ARM 另跳过仅适用 x86_64 安装器的 2 项。此前服务器验证的 66 项包含离线核心合约，无跳过。两组发行打包和许可证收集成功；YAML / Bash 语法和 Git diff 检查通过。决策见 DECISIONS.md。
 - 当前公开安装包仍只支持已实测的 Linux x86_64 glibc。musl 问题待单独复现与修复；ARM 不能仅凭构建成功宣称已支持。
-- README 已移除待发布说明，Linux 表格提供实际安装包 / SHA-256 链接；一键安装与常用 CLI 已上线。相对链接、标题锚点、SVG XML 和 Git diff 检查通过。下一步确认 GNU CI 及 GitHub 线上 README 排版。
+- README 已移除待发布说明，Linux 表格提供实际安装包 / SHA-256 链接；一键安装与常用 CLI 已上线。Chrome 已检查 GitHub 实际渲染的表格、Tip、命令与 12 项常用 CLI，截图已保存。相对链接、标题锚点、SVG XML 和 Git diff 检查通过。
+- 公开安装后的新交互 Bash 在 /tmp 输入 clash，真实 PTY 已确认工作台标题与空订阅提示；按 q 返回 shell，Bash 退出码为 0。验证脚本先等待真实提示符，并移除 ANSI 控制序列后匹配文字。
+- 本次公开发行与文档任务已完成。后续按实际需求排查 musl、评估 ARM64 正式安装包；当前不扩大发行平台承诺。
 
 ## 2026-10-17 · Rust 0.5.0 一键安装与常用 CLI
 
-工程实现与发行文件已完成验证；GitHub 公开入口尚未上线，等待本机登录 GitHub 后继续发布。
+以下为公开发布前的实现与验证记录；当前发布结果以上节为准。
 
 ### 已完成
 
