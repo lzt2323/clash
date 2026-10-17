@@ -10,7 +10,10 @@
   <a href="#install">下载与安装</a> · <a href="#start">开始使用</a> · <a href="#help">常见问题</a>
 </p>
 
-![Clash Linux 工作台：多订阅、节点选择、模式、诊断与设置](docs/assets/workbench.svg)
+<picture>
+  <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/terminal-demo.png">
+  <img src="docs/assets/terminal-demo.gif" alt="输入 clash 打开工作台，查看订阅并选择节点，返回终端开启代理和查看状态">
+</picture>
 
 - **管理订阅**：保存多个订阅，更新内容，按需切换。
 - **选择节点**：搜索节点、测试延迟，切换规则 / 全局 / 直连模式。
