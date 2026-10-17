@@ -1,5 +1,22 @@
 # 当前进度
 
+## 2026-10-17 · README 终端 GIF 展示
+
+### 已完成
+
+- 首屏静态工作台改为从 Bash 输入 clash 开始的 GIF：打开工作台 → 查看订阅 → 选择香港 01 并保存 → q 返回 → clash on → clash status。保留小猫 logo、安装 Tip、常用 CLI 和首次添加订阅文字 / 图示。
+- 新增 `docs/assets/terminal-demo.gif` 与静态 PNG。picture 的 prefers-reduced-motion 条件选择 PNG；HTML 分步指南继续提供手动步骤与暂停。
+- 新增维护工具 `docs/terminal_demo.py`，复用集成测试的本地订阅服务，在 Linux 真实 Rust 0.5.0 与 Mihomo v1.19.29 中录制独立 HOME / 随机端口的 PTY；结束时关闭测试核心并清理临时安装。渲染仅依赖文档工具 Pillow / pyte，不增加应用运行依赖。
+
+### 验证与集成
+
+- 真实录制验证节点选择已提交、当前 shell 代理开启、status 显示运行中；Bash 退出码为 0。原始记录不含真实订阅、服务器地址、账号或私有路径，未加入 Git。
+- GIF 全部帧可解码，1108 × 804，36 个合并帧，循环约 17.6 秒，144,386 字节；静态 PNG 格式与尺寸正确。已逐段检查命令输入、订阅页、节点高亮、返回 shell 和最终状态。
+- Chrome 本地 README 确认 GIF 成功加载、中文可读；390 px 视口的页面宽度为 390，无横向溢出。picture 的 PNG 资源与媒体条件已检查，未修改系统动态效果偏好。
+- GitHub main 已同步演示资产与 README，提交 `dc56ebc`。Chrome 已验证线上 GIF 完整加载，尺寸正确；GitHub 保留 picture 的减少动态效果条件与静态资源地址。
+- HTML 资源链接、Python AST 语法、六个分镜、捕获结果与隐私扫描、Git diff 检查通过。仅修改文档 / 资产，未改 Rust 代码，未重复业务回归。
+- 本轮 GIF 展示已完成，补齐本记录并合入本地 main。发行包仍为 0.5.0，不创建新 Release；后续交互变化时使用维护工具重新录制。
+
 ## 2026-10-17 · Releases 仅保留最新版
 
 - 按用户要求，将 `rust-v0.5.0` 设置为 Latest，删除旧的 `v0.2.0`、`v0.1.1`、`v0.1.0` Release 及其发行附件；历史源码 tag 与提交保留。
