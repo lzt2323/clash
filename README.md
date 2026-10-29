@@ -36,7 +36,7 @@
 ### 一键安装
 
 ```bash
-curl -fsSL https://github.com/lzt2323/clash/releases/download/rust-v0.5.0/install.sh | bash
+curl -fsSL https://clash.lzt23.com/install.sh -o /tmp/clash-install.sh && bash /tmp/clash-install.sh
 ```
 
 再次运行会保留订阅和核心，调用 Rust 升级流程。自定义目录及离线安装见[安装说明](rust/README.md#一键安装)。
