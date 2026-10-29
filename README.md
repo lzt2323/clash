@@ -80,6 +80,7 @@ source "$HOME/.local/share/clash-linux-rust/env.sh"
 | `clash` | 打开终端工作台 |
 | `clash on` | 启动核心，并开启当前终端代理 |
 | `clash off` | 关闭当前终端代理，核心继续运行 |
+| `clash uninstall --purge` | 卸载并清理配置文件 |
 | `clash status` | 查看核心、代理、订阅和节点状态 |
 | `clash start` | 只启动核心，不修改当前终端代理 |
 | `clash stop` | 停止核心，并清除当前终端代理 |
