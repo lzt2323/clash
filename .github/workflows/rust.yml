@@ -49,8 +49,16 @@ jobs:
           "$CLASH_RUST_BINARY" --root /tmp/clash-rust-core install
           MIHOMO_BINARY=/tmp/clash-rust-core/bin/mihomo python3 -B tests/integration.py
           python3 -B tests/pty_test.py
-      - name: Package manager without Python or Mihomo
-        run: python3 package.py --binary 'target/${{ matrix.target }}/release/clash' --target '${{ matrix.target }}'
+      - name: Package thin and offline archives and verify without networking
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          case "$TARGET" in x86_64-*) arch=amd64 ;; aarch64-*) arch=arm64 ;; esac
+          curl --proto '=https' --proto-redir '=https' -fLsS --retry 2 --max-time 180 "https://github.com/MetaCubeX/mihomo/releases/download/v1.19.29/mihomo-linux-$arch-v1.19.29.gz" -o /tmp/mihomo.gz
+          curl --proto '=https' --proto-redir '=https' -fLsS --retry 2 --max-time 60 https://raw.githubusercontent.com/MetaCubeX/mihomo/v1.19.29/LICENSE -o /tmp/mihomo-LICENSE
+          python3 package.py --binary "target/$TARGET/release/clash" --target "$TARGET"
+          python3 package.py --binary "target/$TARGET/release/clash" --target "$TARGET" --core-archive /tmp/mihomo.gz --core-license /tmp/mihomo-LICENSE
+          sudo unshare --net -- python3 -B tests/offline_package.py "dist/clash-linux-rust-$TARGET-offline.tar.gz"
       - uses: actions/upload-artifact@v4
         with:
           name: clash-linux-rust-${{ matrix.target }}

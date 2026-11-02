@@ -599,22 +599,40 @@ else:
         self.assertNotEqual(self.cli('backup', 'restore', malicious.name).returncode, 0)
         self.assertFalse((self.prefix / 'runtime/mvp/escape').exists())
 
-    def archive(self, malicious=False):
+    def archive(self, malicious=False, offline=False, core=None):
         target = self.root / 'update.tar.gz'
         info = json.loads(subprocess.check_output([str(BINARY), '--build-info']))
         with tarfile.open(target, 'w:gz', format=tarfile.USTAR_FORMAT) as archive:
             for name, data in [('clash', BINARY.read_bytes()), ('BUILD.json', json.dumps({
-                'implementation': 'rust', 'version': info['version'], 'architecture': info['arch']}).encode()),
+                'implementation': 'rust', 'version': info['version'], 'architecture': info['arch'],
+                'offline': offline}).encode()),
                                ('LICENSE', b'project license'),
                                ('licenses/dependency/LICENSE', b'dependency license')]:
                 entry = tarfile.TarInfo(name)
                 entry.size = len(data)
                 archive.addfile(entry, io.BytesIO(data))
+            if core is not None:
+                entry = tarfile.TarInfo('mihomo.gz')
+                entry.size = len(core)
+                archive.addfile(entry, io.BytesIO(core))
             if malicious:
                 entry = tarfile.TarInfo('conf/config.yaml')
                 entry.size = 4
                 archive.addfile(entry, io.BytesIO(b'evil'))
         return target, hashlib.sha256(target.read_bytes()).hexdigest()
+
+    def test_offline_package_missing_or_corrupt_core_fails_without_download(self):
+        for core, message in ((None, '离线包缺少'), (b'corrupt core', 'SHA-256')):
+            archive, checksum = self.archive(offline=True, core=core)
+            prefix = self.root / 'offline-rejected'
+            # A network fallback would try this absent file instead of the bundled core.
+            env = dict(self.env, MIHOMO_ARCHIVE=str(self.root / 'must-not-read.gz'))
+            result = subprocess.run([str(BINARY), 'self-install', '--prefix', str(prefix), '--no-shell',
+                                     '--archive', str(archive), '--sha256', checksum],
+                                    env=env, text=True, capture_output=True, timeout=10)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(message, result.stderr)
+            self.assertFalse(prefix.exists())
 
     def test_archive_install_preserves_licenses_and_rejects_invalid_packages(self):
         archive, checksum = self.archive()

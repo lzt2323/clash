@@ -237,6 +237,7 @@ pub fn self_install(args: &[String]) -> Result<()> {
             "THIRD-PARTY-NOTICES.txt",
             "licenses",
             "BUILD.json",
+            "mihomo.gz",
         ] {
             let path = source.parent().unwrap().join(name);
             if path.exists() {
@@ -282,7 +283,16 @@ pub fn self_install(args: &[String]) -> Result<()> {
         executable(&stage.path().join("bin/mihomo"))?;
     }
     if !args.iter().any(|a| a == "--skip-core") {
-        install_core(&Manager::new(stage.path().into())?)?;
+        let build: Value = serde_json::from_slice(&fs::read(stage.path().join("BUILD.json"))?)?;
+        let bundled = stage.path().join("mihomo.gz");
+        let offline = build["offline"] == true;
+        if offline && !bundled.is_file() {
+            bail!("离线包缺少 Mihomo 核心，请重新获取完整离线包；不会联网下载。")
+        }
+        install_core_from_archive(
+            &Manager::new(stage.path().into())?,
+            offline.then_some(bundled.as_path()),
+        )?;
     }
     atomic(
         &stage.path().join(MARKER),
@@ -332,6 +342,9 @@ fn bounded_download(url: &str, limit: u64) -> Result<Vec<u8>> {
     Ok(body)
 }
 pub fn install_core(manager: &Manager) -> Result<()> {
+    install_core_from_archive(manager, None)
+}
+fn install_core_from_archive(manager: &Manager, bundled: Option<&Path>) -> Result<()> {
     let path = manager.root.join("bin/mihomo");
     if path.exists() {
         let output = command_output(Command::new(&path).arg("-v"), Duration::from_secs(5))?;
@@ -368,7 +381,9 @@ pub fn install_core(manager: &Manager) -> Result<()> {
         .find(|(_, name)| *name == filename)
         .map(|(hash, _)| hash)
         .context("缺少固定核心校验值。")?;
-    let archive = if let Some(path) = std::env::var_os("MIHOMO_ARCHIVE") {
+    let archive = if let Some(path) = bundled {
+        fs::read(path).context("无法读取包内核心；不会联网下载。")?
+    } else if let Some(path) = std::env::var_os("MIHOMO_ARCHIVE") {
         fs::read(path).context("无法读取离线核心文件。")?
     } else {
         bounded_download(
@@ -442,6 +457,7 @@ fn unpack(archive: &Path, expected: &str, target: &Path) -> Result<()> {
             "README.md",
             "LICENSE",
             "THIRD-PARTY-NOTICES.txt",
+            "mihomo.gz",
         ]
         .contains(&name.as_ref())
             && !name.starts_with("licenses/")
@@ -743,6 +759,7 @@ fn uninstall(manager: &Manager, args: &[String]) -> Result<()> {
         "THIRD-PARTY-NOTICES.txt",
         "licenses",
         "env.sh",
+        "mihomo.gz",
         MARKER,
         "conf",
         "runtime",

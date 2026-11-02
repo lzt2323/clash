@@ -51,20 +51,22 @@ curl -fsSL https://github.com/lzt2323/clash/releases/download/rust-v0.5.0/instal
 
 再次运行时使用相同安装目录，会保留订阅和核心，调用 Rust 升级流程。GitHub 下载不畅时，可使用已有代理或离线安装，见[安装说明](rust/README.md#一键安装)。
 
-### 手动安装
+### 离线安装（完整包，待下次发行）
 
-先使用随包提供的 `.sha256` 文件校验压缩包，再解压：
+完整包名称带 `-offline`，包含管理程序、Mihomo 核心和许可证。将压缩包与 `.sha256` 文件复制到目标机器后，校验、解压并安装，全程无需联网：
 
 ```bash
-sha256sum -c clash-linux-rust-x86_64-unknown-linux-gnu.tar.gz.sha256
+sha256sum -c clash-linux-rust-x86_64-unknown-linux-gnu-offline.tar.gz.sha256
 mkdir -p clash-linux-package
-tar -xzf clash-linux-rust-x86_64-unknown-linux-gnu.tar.gz -C clash-linux-package
+tar -xzf clash-linux-rust-x86_64-unknown-linux-gnu-offline.tar.gz -C clash-linux-package
 cd clash-linux-package
 ./clash self-install --prefix "$HOME/.local/share/clash-linux-rust"
 source "$HOME/.local/share/clash-linux-rust/env.sh"
 ```
 
-首次安装会下载并校验 Mihomo 核心；相同版本可复用，之后升级管理程序无需再次下载核心。已有核心、离线安装及旧数据迁移见[安装说明](rust/README.md#安装与运行)。
+包内核心缺失或损坏会停止安装，不会回退联网下载。安装目录可通过 `--prefix` 修改；离线安装不包含订阅内容，之后添加远程订阅仍需网络。
+
+当前公开的 0.5.0 只有精简包，不包含核心，首次安装仍需下载核心或显式提供本地核心，见[安装说明](rust/README.md#安装与运行)。
 
 <a id="start"></a>
 
