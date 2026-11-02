@@ -12,10 +12,12 @@
 install.sh
 clash-linux-rust-x86_64-unknown-linux-gnu.tar.gz
 clash-linux-rust-x86_64-unknown-linux-gnu.tar.gz.sha256
+clash-linux-rust-x86_64-unknown-linux-gnu-offline.tar.gz
+clash-linux-rust-x86_64-unknown-linux-gnu-offline.tar.gz.sha256
 SHA256SUMS
 ```
 
-不要把真实订阅、配置、服务器日志或凭据放入发行包。原生程序的包包含原始依赖许可证；Mihomo 独立下载。
+不要把真实订阅、配置、服务器日志或凭据放入发行包。两种包均包含原始依赖许可证；精简包首次安装下载核心，完整离线包额外包含固定校验的 Mihomo 压缩文件及原始许可证。构建时获取核心，目标机器安装时不联网。CI 和发行工作流使用 `sudo unshare --net` 验证完整包的解压安装、归档安装、升级和损坏拒绝。
 
 ## GitHub 草稿
 

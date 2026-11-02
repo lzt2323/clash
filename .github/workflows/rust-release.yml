@@ -51,6 +51,10 @@ jobs:
       - name: Package release assets
         run: |
           python3 package.py --binary target/release/clash --target x86_64-unknown-linux-gnu
+          curl --proto '=https' --proto-redir '=https' -fLsS --retry 2 --max-time 180 https://github.com/MetaCubeX/mihomo/releases/download/v1.19.29/mihomo-linux-amd64-v1.19.29.gz -o /tmp/mihomo.gz
+          curl --proto '=https' --proto-redir '=https' -fLsS --retry 2 --max-time 60 https://raw.githubusercontent.com/MetaCubeX/mihomo/v1.19.29/LICENSE -o /tmp/mihomo-LICENSE
+          python3 package.py --binary target/release/clash --target x86_64-unknown-linux-gnu --core-archive /tmp/mihomo.gz --core-license /tmp/mihomo-LICENSE
+          sudo unshare --net -- python3 -B tests/offline_package.py dist/clash-linux-rust-x86_64-unknown-linux-gnu-offline.tar.gz
           cp ../install.sh dist/install.sh
           cd dist
           sha256sum install.sh *.tar.gz > SHA256SUMS

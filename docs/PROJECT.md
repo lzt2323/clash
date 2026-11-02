@@ -39,3 +39,5 @@ Rust MVP 已在 Linux x86_64 上完成真实核心流量、终端交互、安装
 0.5.0 提供根目录 `install.sh`：通过 `lzt2323/clash` 的 GitHub Releases 获取固定 Rust tag 的 Linux x86_64 glibc 薄包，校验后调用原生安装 / 升级。安装器不依赖 Python、jq 或 Rust 工具链。`self-install --archive / --sha256` 复用既有受限解包与暂存安装流程，安装全部许可证。
 
 发行使用独立的 `rust-vX.Y.Z` tag。手动 release workflow 只针对已存在的 tag 创建草稿；不自动创建 tag 或公开发行。README 以常用 CLI 为日常入口，定时更新与备份放入完整说明。
+
+下一版增加可选完整离线包（`-offline.tar.gz`），内含固定校验的 Mihomo 与许可证；解压安装不联网，核心异常时失败。精简包与独立核心架构保持不变。

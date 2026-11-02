@@ -37,6 +37,26 @@ GitHub 下载不畅时，可使用已有 HTTP(S) 代理，或在可访问 GitHub
 
 源码中的订阅下载（添加、编辑、更新）优先直连；下载失败后尝试当前终端 HTTP(S) 代理，并遵循 `NO_PROXY`。无需退出 TUI 或执行 `clash off`；不会修改终端代理变量或停止核心。此改动待下次发行，核心与程序发行包下载仍遵循原有终端代理设置。
 
+## 完整离线包（待下次发行）
+
+`clash-linux-rust-<target>-offline.tar.gz` 携带固定 Mihomo v1.19.29 压缩文件、原始许可证和管理程序。校验外部 `.sha256` 后完整解压，在解压目录执行：
+
+```bash
+./clash self-install --prefix "$HOME/apps/clash-linux"
+source "$HOME/apps/clash-linux/env.sh"
+```
+
+无需 `--core` 或设置环境变量，安装器自动读取包内 `mihomo.gz`，使用内置固定 SHA-256 校验后解压并验证核心版本。离线标记存在而核心缺失、损坏或平台不兼容时安装失败，不尝试网络。`self-install --archive FILE --sha256 HASH` 也支持完整包；升级时继续保留原安装的核心与配置。
+
+制作完整包时，将目标平台的官方核心 `.gz` 和对应版本的原始 LICENSE 放在本地：
+
+```bash
+python3 package.py --binary target/release/clash --target x86_64-unknown-linux-gnu \
+  --core-archive /path/mihomo-linux-amd64-v1.19.29.gz --core-license /path/mihomo-LICENSE
+```
+
+打包器校验核心与目标架构对应的固定哈希，并将核心、许可证及其哈希记录打入完整包。省略这两个参数仍生成原精简包，不包含 Mihomo。当前 0.5.0 发行附件尚无完整包。
+
 ## 安装与运行
 
 下载对应架构的 Rust 发行包，校验 SHA-256 并解压，在解压目录执行：
