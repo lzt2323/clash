@@ -3,6 +3,7 @@
 Python is test tooling only. Production is also exercised with PATH empty.
 CLASH_RUST_BINARY=/absolute/clash MIHOMO_BINARY=/absolute/mihomo python3 tests/integration.py
 """
+import errno
 import hashlib
 import fcntl
 import http.server
@@ -145,6 +146,46 @@ class WorkerContract(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix='clash-rust-protocol-')
         self.addCleanup(self.temp.cleanup)
         self.h = Harness(Path(self.temp.name) / 'app')
+
+    def subscription_server(self, body=b''):
+        requests = []
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                requests.append(self.path)
+                self.send_response(200)
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *_):
+                pass
+        server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        return f'http://127.0.0.1:{server.server_port}', requests
+
+    def test_subscription_download_reaches_direct_server_with_broken_proxy(self):
+        url, requests = self.subscription_server()
+        self.h.env.update({key: 'http://127.0.0.1:1' for key in PROXY_KEYS})
+        self.h.env.update(no_proxy='', NO_PROXY='')
+        self.h.worker('add', ['Direct', url + '/subscription'], ok=False)
+        self.assertEqual(requests, ['/subscription'])
+
+    def test_successful_direct_download_does_not_contact_shell_proxy(self):
+        url, direct_requests = self.subscription_server(b'proxies: []')
+        proxy, proxy_requests = self.subscription_server()
+        self.h.env.update(http_proxy=proxy, HTTP_PROXY=proxy, no_proxy='', NO_PROXY='')
+        # No core is installed: provider validation fails after a successful fetch.
+        self.h.worker('add', ['Direct', url + '/subscription'], ok=False)
+        self.assertEqual(direct_requests, ['/subscription'])
+        self.assertEqual(proxy_requests, [])
+
+    def test_subscription_download_falls_back_to_proxy_when_direct_fails(self):
+        proxy, requests = self.subscription_server()
+        self.h.env.update(http_proxy=proxy, HTTP_PROXY=proxy, no_proxy='', NO_PROXY='')
+        self.h.worker('add', ['Fallback', 'http://127.0.0.1:1/subscription'], ok=False)
+        self.assertEqual(requests, ['http://127.0.0.1:1/subscription'])
 
     def test_rejects_invalid_actions_arguments_and_oversized_requests(self):
         for action, args in [('_load', []), ('add', ['one']), ('use', [None]),
@@ -343,12 +384,23 @@ class RealChain(unittest.TestCase):
         self.assertEqual((self.h.root / 'conf/config.yaml').read_bytes(), config)
         self.assertFalse((self.h.root / 'runtime/mvp/transaction.json').exists())
 
-    def test_subscription_fetch_uses_shell_proxy_but_controller_remains_direct(self):
+    def test_subscription_fetch_falls_back_to_shell_proxy_but_controller_remains_direct(self):
         self.h.env.update(http_proxy=self.url, https_proxy=self.url, no_proxy='', NO_PROXY='')
         self.h.worker('add', ['Proxied', 'http://subscription.invalid/one'])
         self.h.worker('ensure')
         self.assertTrue(self.h.worker('status')['running'])
         self.assertEqual(self.h.traffic(), b'UPSTREAM_OK')
+
+    def test_subscription_add_and_update_prefer_direct_with_broken_shell_proxy(self):
+        self.h.env.update({key: 'http://127.0.0.1:1' for key in PROXY_KEYS})
+        self.h.env.update(no_proxy='', NO_PROXY='')
+        self.add()
+        self.h.worker('ensure')
+        self.h.worker('add', ['New', self.url + '/two'])
+        self.h.cli('subscription', 'update', check=True)
+        self.assertEqual(len(self.h.state()['subscriptions']), 2)
+        self.assertTrue(self.h.worker('status')['running'])
+        self.assertEqual(self.h.env['http_proxy'], 'http://127.0.0.1:1')
 
     def test_interrupted_transaction_recovers_old_selection(self):
         self.add()
@@ -755,6 +807,71 @@ else:
         self.assertTrue((self.prefix / 'clash').exists())
         self.assertFalse(journal.exists())
         self.assertEqual(self.cli('status').returncode, 0)
+
+
+class InstallerPromptContract(unittest.TestCase):
+    def run_prompt(self, answer=None, options=()):
+        installer = Path(__file__).resolve().parents[2] / 'install.sh'
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory).resolve()
+            pid, fd = pty.fork()
+            if pid == 0:
+                os.environ['HOME'] = str(home)
+                command = 'cat "$1" | /bin/bash -s -- --archive "$2" --skip-core --no-shell "${@:3}"'
+                os.execv('/bin/bash', ['/bin/bash', '-c', command, 'bash', str(installer),
+                                      str(home / 'missing.tar.gz'), *options])
+            output = b''
+            sent = False
+            deadline = time.monotonic() + 10
+            try:
+                while time.monotonic() < deadline:
+                    if not select.select([fd], [], [], 0.1)[0]:
+                        continue
+                    try:
+                        chunk = os.read(fd, 65536)
+                    except OSError as error:
+                        if error.errno != errno.EIO:
+                            raise
+                        break
+                    if not chunk:
+                        break
+                    output += chunk
+                    if answer is not None and not sent and '回车使用默认值'.encode() in output:
+                        os.write(fd, (answer + '\n').encode())
+                        sent = True
+                else:
+                    os.kill(pid, signal.SIGKILL)
+                    self.fail('Installer prompt timed out')
+            finally:
+                os.close(fd)
+                os.waitpid(pid, 0)
+            return str(home), output.decode()
+
+    def test_without_terminal_uses_default_without_reading_stdin(self):
+        installer = Path(__file__).resolve().parents[2] / 'install.sh'
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory).resolve()
+            result = subprocess.run(['/bin/bash', str(installer), '--archive', str(home / 'missing.tar.gz'),
+                                     '--skip-core', '--no-shell'],
+                                    env=dict(os.environ, HOME=str(home)), input='ignored path\n',
+                                    text=True, capture_output=True, start_new_session=True, timeout=10)
+            self.assertNotIn('回车使用默认值', result.stdout + result.stderr)
+            self.assertIn(f'安装目录：{home}/.local/share/clash-linux-rust', result.stdout)
+
+    def test_piped_installer_accepts_default(self):
+        home, output = self.run_prompt('')
+        self.assertIn(f'安装目录：{home}/.local/share/clash-linux-rust', output)
+
+    def test_piped_installer_accepts_home_path_with_spaces(self):
+        home, output = self.run_prompt('~/apps/clash with spaces')
+        self.assertIn(f'安装目录：{home}/apps/clash with spaces', output)
+
+    def test_explicit_prefix_and_yes_skip_prompt(self):
+        for options in (('--prefix', '/tmp/clash custom'), ('--yes',)):
+            home, output = self.run_prompt(options=options)
+            self.assertNotIn('回车使用默认值', output)
+            expected = '/tmp/clash custom' if options[0] == '--prefix' else home + '/.local/share/clash-linux-rust'
+            self.assertIn('安装目录：' + expected, output)
 
 
 if __name__ == '__main__':

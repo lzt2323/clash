@@ -214,8 +214,22 @@ impl Manager {
     }
     fn fetch(&self, url: &str) -> Result<Vec<u8>> {
         let parsed = subscription_url(url)?;
+        let direct = ureq::AgentBuilder::new()
+            .timeout(Duration::from_secs(30))
+            .try_proxy_from_env(false)
+            .build();
+        match self.fetch_with_agent(url, &direct) {
+            Ok(body) => Ok(body),
+            Err(_) => {
+                self.cancel.checkpoint()?;
+                let proxy = crate::http::external_agent(&parsed, Duration::from_secs(30))?;
+                self.fetch_with_agent(url, &proxy)
+            }
+        }
+    }
+    fn fetch_with_agent(&self, url: &str, agent: &ureq::Agent) -> Result<Vec<u8>> {
         self.cancel.checkpoint()?;
-        let response = crate::http::external_agent(&parsed, Duration::from_secs(30))?
+        let response = agent
             .get(url)
             .set("User-Agent", "clash-linux-mvp/1.0")
             .call()
