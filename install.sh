@@ -3,7 +3,7 @@
 set -euo pipefail
 umask 077
 
-RELEASE_TAG=rust-v0.5.0
+RELEASE_TAG=rust-v0.6.0
 REPOSITORY=${CLASH_INSTALL_REPOSITORY:-lzt2323/clash}
 
 fail() { printf '错误：%s\n' "$*" >&2; exit 1; }

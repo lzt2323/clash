@@ -1,23 +1,23 @@
 # Clash Linux · 使用与开发
 
-独立 Rust 管理程序，当前版本 0.5.0。日常运行不需要 Python、Rust、Cargo、Node.js 或额外 TUI 动态库；Mihomo 保持独立。
+独立 Rust 管理程序，当前版本 0.6.0。日常运行不需要 Python、Rust、Cargo、Node.js 或额外 TUI 动态库；Mihomo 保持独立。
 
 ## 一键安装
 
-当前发行版为 [Clash Linux 0.5.0](https://github.com/lzt2323/clash/releases/tag/rust-v0.5.0)，可直接安装：
+当前发行版为 [Clash Linux 0.6.0](https://github.com/lzt2323/clash/releases/tag/rust-v0.6.0)，可直接安装：
 
 ```bash
-curl -fsSL https://github.com/lzt2323/clash/releases/download/rust-v0.5.0/install.sh -o /tmp/clash-install.sh && bash /tmp/clash-install.sh
+curl -fsSL https://github.com/lzt2323/clash/releases/download/rust-v0.6.0/install.sh -o /tmp/clash-install.sh && bash /tmp/clash-install.sh
 ```
 
 安装器仅支持 Linux x86_64 glibc，需要 Bash、curl、tar、gzip、sha256sum、getconf 等系统命令；无需 Python、jq 或编译工具。首次默认安装到 `~/.local/share/clash-linux-rust`，核心独立安装。当前终端按输出执行 `source`；以后新 Bash / Zsh 会话直接使用 `clash`。
 
-源码中的新版 `install.sh` 会在终端询问安装目录：显示默认值，回车接受，也可输入绝对路径、相对路径或 `~/` 路径（支持空格）。`curl … | bash` 从 `/dev/tty` 读取选择。`--prefix` 或 `--yes` 跳过询问；没有交互终端时自动使用默认目录，始终打印最终路径。上述 0.5.0 发行附件尚未包含此改动。升级自定义目录时请再次选择同一目录。
+`install.sh` 会在终端询问安装目录：显示默认值，回车接受，也可输入绝对路径、相对路径或 `~/` 路径（支持空格）。`curl … | bash` 从 `/dev/tty` 读取选择。`--prefix` 或 `--yes` 跳过询问；没有交互终端时自动使用默认目录，始终打印最终路径。升级自定义目录时请再次选择同一目录。
 
 直接从 GitHub 下载并指定目录：
 
 ```bash
-curl -fsSL https://github.com/lzt2323/clash/releases/download/rust-v0.5.0/install.sh -o /tmp/clash-install.sh && bash /tmp/clash-install.sh --prefix "$HOME/apps/clash-linux"
+curl -fsSL https://github.com/lzt2323/clash/releases/download/rust-v0.6.0/install.sh -o /tmp/clash-install.sh && bash /tmp/clash-install.sh --prefix "$HOME/apps/clash-linux"
 ```
 
 自定义目录或使用本地发行包：
@@ -29,15 +29,15 @@ bash install.sh --archive /path/clash-linux-rust-x86_64-unknown-linux-gnu.tar.gz
 
 本地安装默认读取压缩包旁的 `.sha256`，也可显式传入 `--sha256 HASH`。`--core /path/mihomo`、`--import-data /old/install`、`--skip-core` 仅用于新安装；`--no-shell` 可跳过 shell 集成。已安装时再次运行会复用现有升级 / 回滚机制，不覆盖已有回滚备份。
 
-下载源可用 `CLASH_INSTALL_REPOSITORY=owner/repo` 切换 GitHub 仓库，或使用 `CLASH_INSTALL_BASE_URL=https://.../rust-v0.5.0` 指定包含同名包与校验文件的 HTTPS 目录。下载和重定向均要求 HTTPS；校验失败时不会执行包内程序。
+下载源可用 `CLASH_INSTALL_REPOSITORY=owner/repo` 切换 GitHub 仓库，或使用 `CLASH_INSTALL_BASE_URL=https://.../rust-v0.6.0` 指定包含同名包与校验文件的 HTTPS 目录。下载和重定向均要求 HTTPS；校验失败时不会执行包内程序。
 
 GitHub 下载不畅时，可使用已有 HTTP(S) 代理，或在可访问 GitHub 的机器下载 `install.sh`、发行包及 `.sha256` 后传入目标机器，使用上述 `--archive` 安装。首次离线安装还需通过 `--core /path/mihomo` 提供对应平台的 Mihomo 核心。仅镜像脚本不能解决后续发行包和核心下载；`CLASH_INSTALL_BASE_URL` 仅替换管理程序包及校验文件地址，不替换核心下载源。
 
 原生程序也支持 `./clash self-install --archive FILE --sha256 HASH`，从经过校验的发行包安装全部许可证与元数据。安装器只负责下载和引导，配置与生命周期逻辑仍由 Rust 执行。
 
-源码中的订阅下载（添加、编辑、更新）优先直连；下载失败后尝试当前终端 HTTP(S) 代理，并遵循 `NO_PROXY`。无需退出 TUI 或执行 `clash off`；不会修改终端代理变量或停止核心。此改动待下次发行，核心与程序发行包下载仍遵循原有终端代理设置。
+订阅下载（添加、编辑、更新）优先直连；下载失败后尝试当前终端 HTTP(S) 代理，并遵循 `NO_PROXY`。无需退出 TUI 或执行 `clash off`；不会修改终端代理变量或停止核心。核心与程序发行包下载仍遵循原有终端代理设置。
 
-## 完整离线包（待下次发行）
+## 完整离线包
 
 `clash-linux-rust-<target>-offline.tar.gz` 携带固定 Mihomo v1.19.29 压缩文件、原始许可证和管理程序。校验外部 `.sha256` 后完整解压，在解压目录执行：
 
@@ -55,7 +55,7 @@ python3 package.py --binary target/release/clash --target x86_64-unknown-linux-g
   --core-archive /path/mihomo-linux-amd64-v1.19.29.gz --core-license /path/mihomo-LICENSE
 ```
 
-打包器校验核心与目标架构对应的固定哈希，并将核心、许可证及其哈希记录打入完整包。省略这两个参数仍生成原精简包，不包含 Mihomo。当前 0.5.0 发行附件尚无完整包。
+打包器校验核心与目标架构对应的固定哈希，并将核心、许可证及其哈希记录打入完整包。省略这两个参数仍生成原精简包，不包含 Mihomo。
 
 ## 安装与运行
 
@@ -137,7 +137,7 @@ clash uninstall --purge  # 删除当前安装及数据
 Rust 发行源尚未公开发布。在线检查 / 升级可用 `CLASH_RUST_RELEASE_URL=https://.../latest.json` 配置专用元数据；不会使用现有 Python 发行源。元数据格式：
 
 ```json
-{"format":1,"implementation":"rust","version":"0.5.0","assets":{"x86_64":{"url":"https://example.com/release.tar.gz","sha256":"64位SHA-256"}}}
+{"format":1,"implementation":"rust","version":"0.6.0","assets":{"x86_64":{"url":"https://example.com/release.tar.gz","sha256":"64位SHA-256"}}}
 ```
 
 升级保留配置、订阅、Mihomo 和运行状态。旧管理程序保存在安装目录同级的 `.安装目录名.rust-previous`；回滚使用当前数据。已有备份时下一次升级会要求先将备份移走，避免静默丢弃备份。恢复失败的版本保留在同级 `.clash-rust-upgrade-*.failed` 目录中，供检查。
