@@ -31,13 +31,15 @@
 | Linux x86_64 / amd64 | [下载安装包](https://github.com/lzt2323/clash/releases/download/rust-v0.5.0/clash-linux-rust-x86_64-unknown-linux-gnu.tar.gz) · [SHA-256](https://github.com/lzt2323/clash/releases/download/rust-v0.5.0/clash-linux-rust-x86_64-unknown-linux-gnu.tar.gz.sha256) | glibc 与 libgcc 系统库；已在 Ubuntu 22.04 验证 |
 
 > [!TIP]
-> 一键安装会自动下载并校验对应架构的程序，默认安装到 `~/.local/share/clash-linux-rust`，无需 sudo。安装后，当前窗口按提示执行一次 `source`；以后新开终端直接输入 `clash` 即可。
+> 一键安装会自动下载并校验对应架构的程序，默认安装到 `~/.local/share/clash-linux-rust`，无需 sudo。安装器自动将 `env.sh` 加载配置写入 `~/.bashrc`（Zsh 为 `~/.zshrc`）。当前窗口按提示执行一次 `source`；以后新开终端直接输入 `clash` 即可。
 
 ### 一键安装
 
 ```bash
 curl -fsSL https://clash.lzt23.com/install.sh -o /tmp/clash-install.sh && bash /tmp/clash-install.sh
 ```
+
+源码中的新版安装器会在终端显示默认安装目录，回车接受或输入新路径；可用 `--prefix` 指定目录，或用 `--yes` 接受默认值。此交互改动尚未包含在上述 0.5.0 发行附件中。
 
 再次运行会保留订阅和核心，调用 Rust 升级流程。自定义目录及离线安装见[安装说明](rust/README.md#一键安装)。
 

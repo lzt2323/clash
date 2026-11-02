@@ -12,6 +12,7 @@ usage() {
 Clash Linux 一键安装器
 用法：bash install.sh [选项]
   --prefix DIRECTORY   安装目录，默认 ~/.local/share/clash-linux-rust
+  --yes                使用默认目录，不询问（也可用 --prefix 指定）
   --archive FILE       使用本地 Rust 发行包；默认从 GitHub Releases 下载
   --sha256 HASH        本地包的 SHA-256；省略时读取 FILE.sha256
   --core FILE          复用现有 Mihomo 核心（仅新安装）
@@ -25,7 +26,7 @@ HELP
 
 main() {
     local prefix=${HOME:?缺少 HOME}/.local/share/clash-linux-rust
-    local archive='' checksum='' no_shell=0 install_options=0
+    local archive='' checksum='' no_shell=0 install_options=0 choose_prefix=1
     local -a install_args=()
     while [ "$#" -gt 0 ]; do
         case "$1" in
@@ -33,17 +34,33 @@ main() {
             --prefix|--archive|--sha256|--core|--import-data)
                 [ "$#" -ge 2 ] && [ -n "$2" ] || fail "选项 $1 需要参数。"
                 case "$1" in
-                    --prefix) prefix=$2 ;;
+                    --prefix) prefix=$2; choose_prefix=0 ;;
                     --archive) archive=$2 ;;
                     --sha256) checksum=$2 ;;
                     *) install_args+=("$1" "$2"); install_options=1 ;;
                 esac
                 shift 2 ;;
+            --yes) choose_prefix=0; shift ;;
             --no-shell) no_shell=1; shift ;;
             --skip-core) install_args+=("$1"); install_options=1; shift ;;
             *) fail "未知选项：$1。请运行 bash install.sh --help。" ;;
         esac
     done
+    if [ "$choose_prefix" -eq 1 ]; then
+        # Read from the controlling terminal, since stdin may contain this script.
+        if ( : </dev/tty ) 2>/dev/null; then
+            printf '安装目录 [%s]（回车使用默认值）：' "$prefix" >/dev/tty
+            local chosen
+            IFS= read -r chosen </dev/tty || fail '未读取到安装目录，安装已取消。'
+            if [ -n "$chosen" ]; then prefix=$chosen; fi
+        fi
+    fi
+    case "$prefix" in
+        '~') prefix=$HOME ;;
+        '~/'*) prefix=$HOME/${prefix:2} ;;
+    esac
+    [[ "$prefix" == /* ]] || prefix=$PWD/$prefix
+    printf '安装目录：%s\n' "$prefix"
     [ "$(uname -s)" = Linux ] || fail '此安装器仅支持 Linux。'
     case "$(uname -m)" in
         x86_64|amd64) local target=x86_64-unknown-linux-gnu ;;

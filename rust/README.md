@@ -12,6 +12,8 @@ curl -fsSL https://github.com/lzt2323/clash/releases/download/rust-v0.5.0/instal
 
 安装器仅支持 Linux x86_64 glibc，需要 Bash、curl、tar、gzip、sha256sum、getconf 等系统命令；无需 Python、jq 或编译工具。首次默认安装到 `~/.local/share/clash-linux-rust`，核心独立安装。当前终端按输出执行 `source`；以后新 Bash / Zsh 会话直接使用 `clash`。
 
+源码中的新版 `install.sh` 会在终端询问安装目录：显示默认值，回车接受，也可输入绝对路径、相对路径或 `~/` 路径（支持空格）。`curl … | bash` 从 `/dev/tty` 读取选择。`--prefix` 或 `--yes` 跳过询问；没有交互终端时自动使用默认目录，始终打印最终路径。上述 0.5.0 发行附件尚未包含此改动。升级自定义目录时请再次选择同一目录。
+
 自定义目录或使用本地发行包：
 
 ```bash
@@ -24,6 +26,8 @@ bash install.sh --archive /path/clash-linux-rust-x86_64-unknown-linux-gnu.tar.gz
 下载源可用 `CLASH_INSTALL_REPOSITORY=owner/repo` 切换 GitHub 仓库，或使用 `CLASH_INSTALL_BASE_URL=https://.../rust-v0.5.0` 指定包含同名包与校验文件的 HTTPS 目录。下载和重定向均要求 HTTPS；校验失败时不会执行包内程序。
 
 原生程序也支持 `./clash self-install --archive FILE --sha256 HASH`，从经过校验的发行包安装全部许可证与元数据。安装器只负责下载和引导，配置与生命周期逻辑仍由 Rust 执行。
+
+源码中的订阅下载（添加、编辑、更新）优先直连；下载失败后尝试当前终端 HTTP(S) 代理，并遵循 `NO_PROXY`。无需退出 TUI 或执行 `clash off`；不会修改终端代理变量或停止核心。此改动待下次发行，核心与程序发行包下载仍遵循原有终端代理设置。
 
 ## 安装与运行
 
@@ -88,7 +92,7 @@ clash backup keep 10               # 默认保留最近 10 份，范围 1–100
 
 备份保存于 `runtime/mvp/backups/`，包含订阅地址、节点选择、模式、控制密钥和引用的 provider 缓存，权限为 0600。恢复先备份当前配置，再校验并事务性应用备份；沿用当前监听端口。恢复涉及控制接口密钥变化时，会重启正在运行的核心。自动更新间隔和 cron 注册不随配置备份恢复，避免导入备份时意外启用系统任务。
 
-完成 `shell-init` 后，新开终端在任意目录输入 `clash` 即进入 TUI，无需执行脚本。已有窗口先 `source /安装目录/env.sh`；`clash on` 还会启动核心并开启该窗口的代理。
+完成 `shell-init` 后，新开终端在任意目录输入 `clash` 即进入 TUI，无需执行脚本。加载配置自动写入 `~/.bashrc`（Zsh 为 `~/.zshrc`）。已有窗口先 `source /安装目录/env.sh`；`clash on` 还会启动核心并开启该窗口的代理。
 
 ## 管理程序升级
 
