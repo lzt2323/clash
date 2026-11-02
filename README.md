@@ -35,13 +35,21 @@
 
 ### 一键安装
 
+使用 GitHub Releases 下载，默认安装到 `~/.local/share/clash-linux-rust`：
+
 ```bash
-curl -fsSL https://clash.lzt23.com/install.sh -o /tmp/clash-install.sh && bash /tmp/clash-install.sh
+curl -fsSL https://github.com/lzt2323/clash/releases/download/rust-v0.5.0/install.sh -o /tmp/clash-install.sh && bash /tmp/clash-install.sh
+```
+
+指定安装目录（将 `"$HOME/apps/clash-linux"` 改为你希望的路径）：
+
+```bash
+curl -fsSL https://github.com/lzt2323/clash/releases/download/rust-v0.5.0/install.sh -o /tmp/clash-install.sh && bash /tmp/clash-install.sh --prefix "$HOME/apps/clash-linux"
 ```
 
 源码中的新版安装器会在终端显示默认安装目录，回车接受或输入新路径；可用 `--prefix` 指定目录，或用 `--yes` 接受默认值。此交互改动尚未包含在上述 0.5.0 发行附件中。
 
-再次运行会保留订阅和核心，调用 Rust 升级流程。自定义目录及离线安装见[安装说明](rust/README.md#一键安装)。
+再次运行时使用相同安装目录，会保留订阅和核心，调用 Rust 升级流程。GitHub 下载不畅时，可使用已有代理或离线安装，见[安装说明](rust/README.md#一键安装)。
 
 ### 手动安装
 

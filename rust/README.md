@@ -7,12 +7,18 @@
 当前发行版为 [Clash Linux 0.5.0](https://github.com/lzt2323/clash/releases/tag/rust-v0.5.0)，可直接安装：
 
 ```bash
-curl -fsSL https://github.com/lzt2323/clash/releases/download/rust-v0.5.0/install.sh | bash
+curl -fsSL https://github.com/lzt2323/clash/releases/download/rust-v0.5.0/install.sh -o /tmp/clash-install.sh && bash /tmp/clash-install.sh
 ```
 
 安装器仅支持 Linux x86_64 glibc，需要 Bash、curl、tar、gzip、sha256sum、getconf 等系统命令；无需 Python、jq 或编译工具。首次默认安装到 `~/.local/share/clash-linux-rust`，核心独立安装。当前终端按输出执行 `source`；以后新 Bash / Zsh 会话直接使用 `clash`。
 
 源码中的新版 `install.sh` 会在终端询问安装目录：显示默认值，回车接受，也可输入绝对路径、相对路径或 `~/` 路径（支持空格）。`curl … | bash` 从 `/dev/tty` 读取选择。`--prefix` 或 `--yes` 跳过询问；没有交互终端时自动使用默认目录，始终打印最终路径。上述 0.5.0 发行附件尚未包含此改动。升级自定义目录时请再次选择同一目录。
+
+直接从 GitHub 下载并指定目录：
+
+```bash
+curl -fsSL https://github.com/lzt2323/clash/releases/download/rust-v0.5.0/install.sh -o /tmp/clash-install.sh && bash /tmp/clash-install.sh --prefix "$HOME/apps/clash-linux"
+```
 
 自定义目录或使用本地发行包：
 
@@ -24,6 +30,8 @@ bash install.sh --archive /path/clash-linux-rust-x86_64-unknown-linux-gnu.tar.gz
 本地安装默认读取压缩包旁的 `.sha256`，也可显式传入 `--sha256 HASH`。`--core /path/mihomo`、`--import-data /old/install`、`--skip-core` 仅用于新安装；`--no-shell` 可跳过 shell 集成。已安装时再次运行会复用现有升级 / 回滚机制，不覆盖已有回滚备份。
 
 下载源可用 `CLASH_INSTALL_REPOSITORY=owner/repo` 切换 GitHub 仓库，或使用 `CLASH_INSTALL_BASE_URL=https://.../rust-v0.5.0` 指定包含同名包与校验文件的 HTTPS 目录。下载和重定向均要求 HTTPS；校验失败时不会执行包内程序。
+
+GitHub 下载不畅时，可使用已有 HTTP(S) 代理，或在可访问 GitHub 的机器下载 `install.sh`、发行包及 `.sha256` 后传入目标机器，使用上述 `--archive` 安装。首次离线安装还需通过 `--core /path/mihomo` 提供对应平台的 Mihomo 核心。仅镜像脚本不能解决后续发行包和核心下载；`CLASH_INSTALL_BASE_URL` 仅替换管理程序包及校验文件地址，不替换核心下载源。
 
 原生程序也支持 `./clash self-install --archive FILE --sha256 HASH`，从经过校验的发行包安装全部许可证与元数据。安装器只负责下载和引导，配置与生命周期逻辑仍由 Rust 执行。
 
